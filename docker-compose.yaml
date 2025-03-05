@@ -1,0 +1,23 @@
+version: '3'
+services:
+  user-service:
+    build:  ./backend/user-service
+    ports:
+      - "5001:5000"
+    environment:
+      DATABASE_URL: "mysql+mysqlconnector://root:root@host.docker.internal:8889/user"
+    networks:
+      - app-network
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"  # Vue will be available at http://localhost:8080
+    depends_on:
+      - user-service
+    restart: no
+    networks:
+      - app-network
+
+networks:
+  app-network:
