@@ -7,7 +7,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Database connection
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:root@host.docker.internal:8889/OrderManagement"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:root@host.docker.internal:8889/ordermanagement"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
 
@@ -136,4 +136,4 @@ def get_order_status(order_id):
     return jsonify(order.json())
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5003)
+    app.run(debug=True, host="0.0.0.0", port=5000)
