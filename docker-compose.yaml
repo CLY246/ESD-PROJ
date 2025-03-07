@@ -28,6 +28,16 @@ services:
       - app-network
     restart: always
 
+  queuemanagement-service:
+    build: ./backend/queuemanagement-service
+    ports:
+      - "5004:5000"
+    environment:
+      SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/queuemanagement"
+    networks:
+      - app-network
+    restart: always
+
   frontend:
     build: ./frontend
     ports:
