@@ -8,6 +8,15 @@ services:
       DATABASE_URL: "mysql+mysqlconnector://root:root@host.docker.internal:8889/user"
     networks:
       - app-network
+  vendor-service:
+    build: ./backend/vendor-service
+    ports:
+      - "5002:5000"
+    environment:
+      SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/Vendors"
+    networks:
+      - app-network
+    restart: always
 
   frontend:
     build: ./frontend
@@ -15,7 +24,7 @@ services:
       - "8080:80"  # Vue will be available at http://localhost:8080
     depends_on:
       - user-service
-    restart: no
+    restart: always
     networks:
       - app-network
 
