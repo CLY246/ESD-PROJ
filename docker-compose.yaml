@@ -1,7 +1,7 @@
 version: '3'
 services:
   user-service:
-    build:  ./backend/user-service
+    build: ./backend/user-service
     ports:
       - "5001:5000"
     environment:
@@ -18,10 +18,20 @@ services:
       - app-network
     restart: always
 
+  ordermanagement-service:
+    build: ./backend/vendor-service
+    ports:
+      - "5003:5000"
+    environment:
+      SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/ordermanagement"
+    networks:
+      - app-network
+    restart: always
+
   frontend:
     build: ./frontend
     ports:
-      - "8080:80"  # Vue will be available at http://localhost:8080
+      - "8080:80" # Vue will be available at http://localhost:8080
     depends_on:
       - user-service
     restart: always
