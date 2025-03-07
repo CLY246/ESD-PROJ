@@ -6,7 +6,7 @@ app = Flask(__name__)
 
 CORS(app)  
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:root@host.docker.internal:3306/Vendors"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:root@host.docker.internal:8889/Vendors"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
 
@@ -79,7 +79,8 @@ def health_check():
 @app.route("/vendors", methods=["GET"])
 def get_vendors():
     vendors = Vendor.query.all()
-    return jsonify({"vendors": [v.json() for v in vendors]})
+    return jsonify([{"VendorID": v.VendorID, "VendorName": v.VendorName, "Location": v.Location, "ContactInfo": v.ContactInfo, "Rating":v.Rating} for v in vendors])
+
 
 
 if __name__ == "__main__":

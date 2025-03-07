@@ -15,15 +15,15 @@
           <p>Loading vendors...</p>
         </div>
   
-        <div v-for="vendor in vendors" class="vendor-card">
+        <div v-for="vendor in vendors" :key="vendor.VendorID">
             
           <h3>{{ vendor.VendorID }}</h3>
-          <ul>
+          <!-- <ul>
             <li v-for="item in vendor.menu" :key="item.id">
               {{ item.name }} - ${{ item.price }}
               <button @click="addToCart(item)">Add to Cart</button>
             </li>
-          </ul>
+          </ul> -->
         </div>
 
         <!-- Cart Section -->
