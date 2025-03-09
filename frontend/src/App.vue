@@ -1,39 +1,49 @@
 <template>
-  <div>
-    <router-view></router-view>
-    <!-- <h1>Vue.js + Flask + Docker</h1>
-    <p>{{ message }}</p>
-
-    <h2>Users</h2>
-    <p v-if="users.length === 0">Loading users...</p>
-    <ul>
-      <li v-for="user in users" :key="user.id">{{ user.name }} - {{ user.email }}</li>
-    </ul> -->
+  <div id="app">
+    <Navbar v-if="showNavbar" />
+    <router-view class="router-container" />
   </div>
-  
 </template>
 
-<!-- <script>
+<script>
+import Navbar from "./components/Navbar.vue";
+import { useRoute } from "vue-router";
+import { computed } from "vue";
+
 export default {
-  data() {
-    return {
-      users: [],
-    };
+  components: {
+    Navbar,
   },
-  async mounted() {
-    const userApi = import.meta.env.VITE_USER_API || "http://localhost:5001/api/users";
-   
-    console.log("Fetching from APIs:", userApi);
+  setup() {
+    const route = useRoute();
 
-    try {
-      const userResponse = await fetch(userApi);
-      this.users = await userResponse.json();
+    // Define routes where navbar should be hidden
+    const hideNavbarRoutes = ["/login", "/menu/:id"];
 
-    } catch (error) {
-      console.error("API request failed:", error);
-    }
-  }
+    // Compute if navbar should be shown
+    const showNavbar = computed(() => !hideNavbarRoutes.includes(route.path));
+
+    return { showNavbar };
+  },
 };
 </script>
- -->
 
+
+<style>
+#app {
+  width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.router-container {
+  flex: 1; /* Ensures it expands to fill space */
+  width: 100%;
+  padding-top: 20px;
+}
+
+*{
+  font-family: "Poppins", sans-serif;
+}
+</style>

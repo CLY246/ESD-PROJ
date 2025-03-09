@@ -18,7 +18,9 @@ class Vendor(db.Model):
     VendorID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     VendorName = db.Column(db.String(255), nullable=False)
     Location = db.Column(db.String(255), nullable=False)
-    ContactInfo = db.Column(db.String(255), nullable=False)
+    OpeningHours = db.Column(db.String(255), nullable=False)
+    ImageURL = db.Column(db.String(2048), nullable=False)
+    Cuisine = db.Column(db.String(255), nullable=False)
     Rating = db.Column(db.Float, default=0.00)
 
     def json(self):
@@ -26,7 +28,9 @@ class Vendor(db.Model):
             "VendorID": self.VendorID,
             "VendorName": self.VendorName,
             "Location": self.Location,
-            "ContactInfo": self.ContactInfo,
+            "OpeningHours": self.OpeningHours,
+            "ImageURL": self.ImageURL,
+            "Cuisine": self.Cuisine,
             "Rating": self.Rating
         }
 
@@ -39,7 +43,7 @@ class MenuItem(db.Model):
     Description = db.Column(db.Text)
     Price = db.Column(db.Float, nullable=False)
     Category = db.Column(db.String(100))
-    ImageURL = db.Column(db.String(255))
+    ImageURL = db.Column(db.String(2048)) 
 
     def json(self):
         return {
@@ -79,8 +83,27 @@ def health_check():
 @app.route("/vendors", methods=["GET"])
 def get_vendors():
     vendors = Vendor.query.all()
-    return jsonify([{"VendorID": v.VendorID, "VendorName": v.VendorName, "Location": v.Location, "ContactInfo": v.ContactInfo, "Rating":v.Rating} for v in vendors])
+    return jsonify([
+        {
+            "VendorID": v.VendorID,
+            "VendorName": v.VendorName,
+            "Location": v.Location,
+            "OpeningHours": v.OpeningHours,
+            "ImageURL": v.ImageURL,
+            "Cuisine": v.Cuisine,
+            "Rating": v.Rating
+        }
+        for v in vendors
+    ])
 
+@app.route("/menu/<int:vendor_id>", methods=["GET"])
+def get_menu_items(vendor_id):
+    menu_items = MenuItem.query.filter_by(VendorID=vendor_id).all()
+    
+    if not menu_items:
+        return jsonify({"message": "No menu items found for this vendor."}), 404
+
+    return jsonify([item.json() for item in menu_items])
 
 
 if __name__ == "__main__":

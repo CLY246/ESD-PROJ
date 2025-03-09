@@ -47,6 +47,5 @@ services:
     restart: always
     networks:
       - app-network
-
 networks:
   app-network:
