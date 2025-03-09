@@ -5,7 +5,7 @@
 
     <!-- Display Vendors & Food Items for Logged-in Users -->
     <div v-if="userLoggedIn">
-      <div class="row g-3 mx-lg-5 mx-md-4 mx-sm-3 mx-2">
+      <div class="row g-3 mx-lg-5 mx-md-4 mx-sm-3">
         <!-- <h2>Welcome, {{ user.name }}</h2> -->
         <h2>All restaurants</h2>
         <div
@@ -107,7 +107,12 @@ export default {
 </script>
 
 <style scoped>
-
+@media (width >= 64rem) {
+  .row {
+    padding-left: 250px;
+    padding-right: 250px;
+  }
+}
 .vendor-card {
   width: 100%;
   height: auto; 

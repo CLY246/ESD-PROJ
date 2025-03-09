@@ -1,8 +1,6 @@
 <template>
-  <div id="app">
     <Navbar v-if="showNavbar" />
     <router-view class="router-container" />
-  </div>
 </template>
 
 <script>
@@ -35,11 +33,12 @@ export default {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  padding: 0;
 }
 
 .router-container {
   flex: 1; /* Ensures it expands to fill space */
-  width: 100%;
+  min-width: 100%;
   padding-top: 20px;
 }
 
