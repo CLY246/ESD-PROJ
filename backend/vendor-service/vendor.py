@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+from collections import defaultdict
 
 app = Flask(__name__)
 
@@ -96,14 +97,38 @@ def get_vendors():
         for v in vendors
     ])
 
+@app.route("/vendors/<int:vendor_id>", methods=["GET"])
+def get_vendor(vendor_id):
+    vendor = Vendor.query.filter_by(VendorID=vendor_id).first()
+
+    if not vendor:
+        return jsonify({"error": "Vendor not found"}), 404
+
+    return jsonify(
+        {
+            "VendorID": vendor.VendorID,
+            "VendorName": vendor.VendorName,
+            "Location": vendor.Location,
+            "OpeningHours": vendor.OpeningHours,
+            "ImageURL": vendor.ImageURL,
+            "Cuisine": vendor.Cuisine,
+            "Rating": vendor.Rating,
+        }
+    )
+
 @app.route("/menu/<int:vendor_id>", methods=["GET"])
 def get_menu_items(vendor_id):
     menu_items = MenuItem.query.filter_by(VendorID=vendor_id).all()
     
     if not menu_items:
         return jsonify({"message": "No menu items found for this vendor."}), 404
+    
+    categorized_menu = defaultdict(list)
+    
+    for item in menu_items:
+        categorized_menu[item.Category].append(item.json())
 
-    return jsonify([item.json() for item in menu_items])
+    return jsonify(categorized_menu)
 
 
 if __name__ == "__main__":

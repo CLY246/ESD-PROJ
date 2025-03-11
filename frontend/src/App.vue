@@ -15,11 +15,13 @@ export default {
   setup() {
     const route = useRoute();
 
-    // Define routes where navbar should be hidden
-    const hideNavbarRoutes = ["/login", "/menu/:id"];
+    // Define exact routes where navbar should be hidden
+    const hideNavbarRoutes = ["/login"];
 
     // Compute if navbar should be shown
-    const showNavbar = computed(() => !hideNavbarRoutes.includes(route.path));
+    const showNavbar = computed(() => {
+      return !hideNavbarRoutes.includes(route.path) && !route.path.startsWith("/menu/");
+    });
 
     return { showNavbar };
   },

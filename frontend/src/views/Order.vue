@@ -5,13 +5,13 @@
 
     <!-- Display Vendors & Food Items for Logged-in Users -->
     <div v-if="userLoggedIn">
-      <div class="row g-3 mx-lg-5 mx-md-4 mx-sm-3">
+      <div class="row g-3 mx-lg-5 mx-sm-3">
         <!-- <h2>Welcome, {{ user.name }}</h2> -->
         <h2>All restaurants</h2>
         <div
           v-for="vendor in vendors"
           :key="vendor.VendorID"
-          class="col-lg-4 col-md-6 mx-auto"
+          class="col-lg-4 col-md-6 col-sm-6"
         >
         <RouterLink :to="'/menu/' + vendor.VendorID" class="vendor-menu">
           <div class="vendor-card card">
@@ -107,7 +107,7 @@ export default {
 </script>
 
 <style scoped>
-@media (width >= 64rem) {
+@media (min-width: 1600px) {
   .row {
     padding-left: 250px;
     padding-right: 250px;
