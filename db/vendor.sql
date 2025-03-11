@@ -33,8 +33,11 @@ CREATE TABLE MenuItems (
 );
 
 INSERT INTO MenuItems (VendorID, ItemName, Description, Price, Category, ImageURL) VALUES 
-(1,'Laksa Cream Sauce + Spaghetti','',5.80,'Must Try New Flavour! For A Limited Time Only!','https://images.deliveryhero.io/image/fd-sg/Products/46065581.jpg??width=800'),
-(1, 'Smoked Duck Aglio Olio','Aglio Olio + Spaghetti, Smoked Duck Breast, Sous Vide Egg, Spinach, Mushroom',9.00,'Pasta','https://images.deliveryhero.io/image/fd-sg/Products/5368047.jpg??width=800');
+(1, 1, 'Laksa Cream Sauce + Spaghetti', '', 5.80, 'Must Try New Flavour! For A Limited Time Only!', 'https://images.deliveryhero.io/image/fd-sg/Products/46065581.jpg??width=800'),
+(2, 1, 'Smoked Duck Aglio Olio', 'Aglio Olio + Spaghetti, Smoked Duck Breast, Sous Vide Egg, Spinach, Mushroom', 9.00, 'Pasta', 'https://images.deliveryhero.io/image/fd-sg/Products/5368047.jpg??width=800'),
+(3, 1, 'Carbonara', 'Cream Sauce + Organic Spaghetti, Pork Bacon, Sous Vide Egg, Spinach, Button Mushroom', 11.80, 'Pasta', 'https://images.deliveryhero.io/image/fd-sg/Products/37909329.jpg??width=800'),
+(4, 1, 'Chicken Alfredo', 'Cream Sauce + Organic Spaghetti, Chicken Thigh, Sous Vide Egg, Spinach, Button Mushroom', 11.80, 'Pasta', 'https://images.deliveryhero.io/image/fd-sg/Products/37909330.jpg??width=800'),
+(5, 1, 'Meat Lovers', 'Cream Sauce + Organic Spaghetti, Smoked Duck, Pork Bacon, Chicken Thigh, Sous Vide Egg', 12.60, 'Pasta', 'https://images.deliveryhero.io/image/fd-sg/Products/37909336.jpg??width=800');
 
 -- Inventory Table
 CREATE TABLE Inventory (
