@@ -46,19 +46,22 @@
                 <div class="d-flex justify-content-between align-items-center">
                   <div>
                     <h5>{{ item.ItemName }}</h5>
-                    <p class="text-muted small">{{ item.Description }}</p>
+                    <p class="description text-muted small">
+                      {{ item.Description }}
+                    </p>
                     <p>${{ item.Price.toFixed(2) }}</p>
                   </div>
-                  <img
-                    :src="item.ImageURL"
-                    alt="Item Image"
-                    class="menu-item-img rounded"
-                  />
+                  <div class="item-img">
+                    <img
+                      :src="item.ImageURL"
+                      alt="Item Image"
+                      class="menu-item-img rounded"
+                    />
+                    <button @click="addToCart(item)" class="addtocart">
+                      <fa :icon="['fas', 'plus']" style="color: gray"></fa>
+                    </button>
+                  </div>
                 </div>
-                <button
-                  @click="addToCart(item)"
-                  class="btn btn-dark w-100 mt-3">Add to Cart
-                </button>
               </div>
             </div>
           </div>
@@ -71,20 +74,31 @@
 
           <!-- Cart Items -->
           <div class="cart-items">
-            <div v-if="cart.length === 0" class="text-muted small">Your cart is empty.</div>
-            <div v-for="item in cart" :key="item.ItemID" class="d-flex justify-content-between mt-3">
+            <div v-if="cart.length === 0" class="text-muted small">
+              Your cart is empty.
+            </div>
+            <div
+              v-for="item in cart"
+              :key="item.ItemID"
+              class="d-flex justify-content-between mt-3"
+            >
               <div>
                 <h6 class="fw-bold">{{ item.ItemName }}</h6>
                 <p class="text-danger small">${{ item.Price.toFixed(2) }}</p>
               </div>
-              <button @click="removeFromCart(item)" class="btn btn-sm btn-outline-danger">Remove</button>
+              <button
+                @click="removeFromCart(item)"
+                class="btn btn-sm btn-outline-danger"
+              >
+                Remove
+              </button>
             </div>
           </div>
 
           <!-- Sticky Footer (Total & Payment Button) -->
           <div class="cart-footer">
             <p class="fw-bold">Total: ${{ totalPrice }}</p>
-            <button v-if="cart.length" class="btn btn-dark w-100">
+            <button class="btn btn-dark w-100">
               Review Payment and Address
             </button>
           </div>
@@ -282,19 +296,57 @@ html {
 h2 {
   font-size: 16px;
 }
+h5 {
+  font-size: 14px;
+}
+.description {
+  font-size: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px; 
+  word-wrap: break-word;
+  line-height: 1.4em; 
+  max-height: 2.8em;
+  min-height: 2.8em;
+}
+.item-img {
+  margin-left: 10px;
+  width: 100px;
+  height: 100px;
+}
 
 .menu-item-img {
-  width: 80px;
-  height: 80px;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   border-radius: 8px;
+  position: relative;
+}
+
+.addtocart {
+  border-radius: 50px;
+  height: 30px;
+  width: 30px;
+  background-color: white;
+  border: none;
+  position: absolute;
+  right: 19px;
+  bottom: 27px;
+}
+
+.card:hover{
+    background-color: lightgoldenrodyellow;
+    transform: scale(1.05);
 }
 
 /* Sticky Full-Height Cart */
 .sticky-cart {
   position: sticky;
   top: 40px;
-  height: 100vh; /* Full height */
+  height: 80vh; /* Full height */
   display: flex;
   flex-direction: column;
   background: white;
@@ -319,6 +371,4 @@ h2 {
   padding: 10px 0;
   border-top: 1px solid #ddd;
 }
-
-
 </style>
