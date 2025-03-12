@@ -1,4 +1,4 @@
-version: '3'
+# version: '3'
 services:
   user-service:
     build: ./backend/user-service
@@ -34,6 +34,66 @@ services:
       - "5004:5000"
     environment:
       SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/queuemanagement"
+    networks:
+      - app-network
+    restart: always
+
+  payment-service:
+    build: ./backend/payment-service
+    ports:
+      - "5005:5000"
+    environment:
+      SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/payment"
+    networks:
+      - app-network
+    restart: always
+
+  notification-service:
+    build: ./backend/notification-service
+    ports:
+      - "5006:5000"
+    environment:
+      SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/notification"
+    networks:
+      - app-network
+    restart: always
+
+  error-service:
+    build: ./backend/error-service
+    ports:
+      - "5007:5000"
+    environment:
+      SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/error"
+    networks:
+      - app-network
+    restart: always
+
+  activitylog-service:
+    build: ./backend/activitylog-service
+    ports:
+      - "5008:5000"
+    environment:
+      SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/activitylog"
+    networks:
+      - app-network
+    restart: always
+
+  splitpayment-service:
+    build: ./backend/splitpayment-service
+    ports:
+      - "5009:5000"
+    environment:
+      SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/splitpayment"
+    networks:
+      - app-network
+    restart: always
+
+  quickreorder-service:
+    build: ./backend/quickreorder-service
+    ports:
+      - "5010:5000"
+    environment:
+      SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/quickreorder"
     networks:
       - app-network
     restart: always
