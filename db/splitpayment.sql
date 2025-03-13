@@ -1,6 +1,6 @@
 -- Create the database if it does not exist
-CREATE DATABASE IF NOT EXISTS splitpayment;
-USE splitpayment;
+CREATE DATABASE IF NOT EXISTS SplitPayment;
+USE SplitPayment;
 
 -- Create SplitPayments Table
 CREATE TABLE SplitPayments (

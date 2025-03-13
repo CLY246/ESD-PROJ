@@ -1,6 +1,8 @@
+DROP DATABASE IF EXISTS ActivityLog;
+
 -- Create the database if it does not exist
-CREATE DATABASE IF NOT EXISTS activitylog;
-USE activitylog;
+CREATE DATABASE IF NOT EXISTS ActivityLog;
+USE ActivityLog;
 
 -- Create ActivityLog Table
 CREATE TABLE ActivityLog (

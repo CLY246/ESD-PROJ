@@ -1,3 +1,5 @@
+
+DROP DATABASE IF EXISTS Placeanorder;
 CREATE DATABASE Placeanorder;
 
 USE Placeanorder;

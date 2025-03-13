@@ -1,3 +1,4 @@
+
 -- Create the database
 DROP DATABASE IF EXISTS Payment;
 CREATE DATABASE Payment;
