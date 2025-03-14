@@ -1,30 +1,31 @@
+-- Create the OrderManagement database
 DROP DATABASE IF EXISTS OrderManagement;
--- Create the database
 CREATE DATABASE IF NOT EXISTS OrderManagement;
 USE ordermanagement;
 
--- Orders Table
+-- Create Orders Table
 CREATE TABLE Orders (
     OrderID INT PRIMARY KEY AUTO_INCREMENT,
     UserID INT NOT NULL, -- Reference to user
     OrderDateTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     TotalAmount DECIMAL(10, 2) NOT NULL,
     OrderStatus VARCHAR(50) DEFAULT 'pending', -- 'pending', 'completed', etc.
-    TransactionID VARCHAR(255) NOT NULL
+    TransactionID VARCHAR(255) NOT NULL,
+    FOREIGN KEY (UserID) REFERENCES user.users(id) ON DELETE CASCADE
 );
 
--- OrderItems Table
+-- Create OrderItems Table
 CREATE TABLE OrderItems (
     OrderItemID INT PRIMARY KEY AUTO_INCREMENT,
     OrderID INT NOT NULL,
     ItemID INT NOT NULL, -- Reference to menu item or product
     Quantity INT NOT NULL,
     Price DECIMAL(10, 2) NOT NULL,
-    VendorID INT NOT NULL, -- Reference to vendor/store
+    VendorID INT NOT NULL, 
     FOREIGN KEY (OrderID) REFERENCES Orders(OrderID) ON DELETE CASCADE
 );
 
--- OrderQueue Table
+-- Create OrderQueue Table
 CREATE TABLE OrderQueue (
     QueueID INT PRIMARY KEY AUTO_INCREMENT,
     OrderID INT NOT NULL UNIQUE, 
@@ -34,7 +35,7 @@ CREATE TABLE OrderQueue (
     FOREIGN KEY (OrderID) REFERENCES Orders(OrderID) ON DELETE CASCADE
 );
 
--- Insert Orders
+-- Insert Orders (UserID must exist in users table)
 INSERT INTO Orders (UserID, TotalAmount, OrderStatus, TransactionID)
 VALUES 
 (4, 150.00, 'completed', 'TXN11223'),
@@ -44,7 +45,7 @@ VALUES
 (8, 45.50, 'completed', 'TXN99001'),
 (9, 60.00, 'completed', 'TXN22334');
 
--- Insert OrderItems (OrderID should match those generated in the Orders table)
+-- Insert OrderItems (OrderID must match those generated in Orders table)
 INSERT INTO OrderItems (OrderID, ItemID, Quantity, Price, VendorID)
 VALUES 
 (1, 1, 1, 50.00, 1),

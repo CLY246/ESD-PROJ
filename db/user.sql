@@ -1,13 +1,18 @@
+-- Create the database if it doesn't exist
 DROP DATABASE IF EXISTS user;
 CREATE DATABASE IF NOT EXISTS user;
 USE user;
 
-CREATE TABLE IF NOT EXISTS users (  id INT AUTO_INCREMENT PRIMARY KEY,
+-- Create the users table
+CREATE TABLE IF NOT EXISTS users (  
+    id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    password VARCHAR(255) NOT NULL, 
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Insert data into users table
 INSERT INTO users (name, email, password) VALUES 
 ('Alice Johnson', 'alice.johnson@example.com', 'Alice@2024!'),
 ('Bob Smith', 'bob.smith@example.com', 'BobSecure#99'),
