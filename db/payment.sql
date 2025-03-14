@@ -17,6 +17,7 @@ CREATE TABLE Transactions (
 );
 
 -- Insert data into the Transactions table
+-- Insert data into the Transactions table
 INSERT INTO Transactions (OrderID, Amount, PaymentMethod, PaymentStatus)
 VALUES 
 (1, 150.00, 'PayNow', 'Successful'),
@@ -29,4 +30,3 @@ VALUES
 (8, 60.75, 'PayNow', 'Successful'),
 (9, 120.00, 'PayNow', 'Failed'),
 (10, 75.00, 'PayNow', 'Pending');
-
