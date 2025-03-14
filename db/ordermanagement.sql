@@ -20,26 +20,43 @@ CREATE TABLE OrderItems (
     ItemID INT NOT NULL, -- Reference to menu item or product
     Quantity INT NOT NULL,
     Price DECIMAL(10, 2) NOT NULL,
-    StoreID INT NOT NULL, -- Reference to vendor/store
+    VendorID INT NOT NULL, -- Reference to vendor/store
     FOREIGN KEY (OrderID) REFERENCES Orders(OrderID) ON DELETE CASCADE
 );
 
--- Insert Additional Dummy Data into Orders
+-- OrderQueue Table
+CREATE TABLE OrderQueue (
+    QueueID INT PRIMARY KEY AUTO_INCREMENT,
+    OrderID INT NOT NULL UNIQUE, 
+    Timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    EstimatedWaitTime INT,
+    Status ENUM('Queued', 'Processing', 'Completed') DEFAULT 'Queued',
+    FOREIGN KEY (OrderID) REFERENCES Orders(OrderID) ON DELETE CASCADE
+);
+
+-- Insert Orders
 INSERT INTO Orders (UserID, TotalAmount, OrderStatus, TransactionID)
 VALUES 
 (4, 150.00, 'completed', 'TXN11223'),
 (5, 75.00, 'pending', 'TXN33445'),
 (6, 120.00, 'completed', 'TXN55678'),
 (7, 90.25, 'pending', 'TXN77889'),
-(8, 45.50, 'completed', 'TXN99001');
+(8, 45.50, 'completed', 'TXN99001'),
+(9, 60.00, 'completed', 'TXN22334');
 
--- Insert Additional Dummy Data into OrderItems
-INSERT INTO OrderItems (OrderID, ItemID, Quantity, Price, StoreID)
+-- Insert OrderItems (OrderID should match those generated in the Orders table)
+INSERT INTO OrderItems (OrderID, ItemID, Quantity, Price, VendorID)
 VALUES 
-(3, 104, 1, 50.00, 5004),
-(4, 105, 2, 30.00, 5005),
-(5, 106, 1, 40.00, 5006),
-(6, 107, 2, 60.00, 5007),
-(7, 108, 3, 15.00, 5008),
-(8, 109, 1, 45.50, 5009);
+(1, 1, 1, 50.00, 1),
+(2, 6, 2, 30.00, 2),
+(3, 11, 1, 40.00, 3),
+(4, 16, 2, 60.00, 4),
+(5, 21, 3, 15.00, 5);
 
+-- Insert OrderQueue Data
+INSERT INTO OrderQueue (OrderID, EstimatedWaitTime, Status) VALUES
+(1, 10, 'Queued'),
+(2, 5, 'Processing'),
+(3, 8, 'Queued'),
+(4, 12, 'Queued'),
+(5, 7, 'Processing');
