@@ -1,7 +1,7 @@
 -- Create the OrderManagement database
 DROP DATABASE IF EXISTS OrderManagement;
 CREATE DATABASE IF NOT EXISTS OrderManagement;
-USE ordermanagement;
+USE OrderManagement;
 
 -- Create Orders Table
 CREATE TABLE Orders (

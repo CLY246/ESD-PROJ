@@ -13,16 +13,16 @@ CREATE TABLE SplitPayments (
 );
 
 -- Insert Additional Sample Data
-INSERT INTO SplitPayments (OrderID, UserID, Amount, TransactionID, PaymentStatus)
+INSERT INTO SplitPayments (SplitPaymentID,OrderID,PayerUserID, Amount, TransactionID, Status)
 VALUES 
-(1, '1', 50.00, 2004, 'Successful'),
-(1, '2', 50.00, 2005, 'Successful'),
-(1, '3', 50.00, 2006, 'Successful'),
-(2, '4', 40.00, 2007, 'Pending'),
-(2, '5', 35.00, 2008, 'Pending'),
-(3, '6', 40.00, 2009, 'Successful'),
-(3, '7', 40.00, 2010, 'Successful'),
-(3, '8', 40.00, 2011, 'Successful'),
+(1, 1, 1, 50.00, 2004, 'Successful'),
+(2, 2, 2, 50.00, 2005, 'Successful'),
+(3, 3, 3, 50.00, 2006, 'Successful'),
+(4, 4, 4, 40.00, 2007, 'Pending'),
+(5, 5, 5, 35.00, 2008, 'Pending'),
+(6, 6, 6, 40.00, 2009, 'Successful'),
+(7, 7, 7, 40.00, 2010, 'Successful'),
+(8, 8, 8, 40.00, 2011, 'Successful') ;
 
 
 
