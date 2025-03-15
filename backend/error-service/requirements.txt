@@ -4,4 +4,4 @@ mysql-connector-python==8.3.0
 Flask-CORS
 mysql-connector-python
 requests
-
+pika
