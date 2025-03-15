@@ -2,7 +2,8 @@ Flask==3.0.1
 Flask-SQLAlchemy==3.1.1
 mysql-connector-python==8.3.0
 Flask-CORS
-mysql-connector-python
-requests
-flask-bcrypt
-flask-jwt-extended
+Flask-JWT-Extended
+gunicorn
+supabase
+pyjwt
+psycopg2-binary

@@ -2,7 +2,7 @@
   <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container-fluid">
       <!-- Brand / Logo -->
-      <router-link to="/" class="navbar-brand">MyApp</router-link>
+      <router-link to="/" class="navbar-brand">yumsinmytums</router-link>
 
       <!-- Mobile Toggle Button -->
       <button

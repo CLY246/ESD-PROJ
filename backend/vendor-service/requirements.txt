@@ -4,4 +4,8 @@ mysql-connector-python==8.3.0
 Flask-CORS
 mysql-connector-python
 requests
+Flask-Migrate
+psycopg2-binary
+gunicorn
+
 

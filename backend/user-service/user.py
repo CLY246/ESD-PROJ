@@ -1,35 +1,44 @@
-from flask import Flask, request, jsonify
 from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
-from flask_bcrypt import Bcrypt
+from flask import Flask, request, jsonify
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
-import os
+from supabase_auth import sign_up_user, sign_in_user, get_user_info
+from supabase_auth import supabase_client
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-
+app.config["DEBUG"] = True
 CORS(app)  
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:root@host.docker.internal:8889/user"
-app.config["JWT_SECRET_KEY"] = "16d1f8e74e00fe360268751f53f5ee618df825719740cd4dee0d9b98937ceaeb"
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres.zfuesqdkqrlbnmsfichi:postgres@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
 
-db = SQLAlchemy(app)
-bcrypt = Bcrypt(app)
-jwt = JWTManager(app)
 
-class User(db.Model):
-    __tablename__ = 'users'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(100), nullable=False)
-
+db = SQLAlchemy()
 
 with app.app_context():
+    db.init_app(app)
     db.create_all()
 
+class User(db.Model):
+    __tablename__ = "users"
+    id = db.Column(db.String, primary_key=True) 
+    username = db.Column(db.String(255), unique=True, nullable=False)
+    email = db.Column(db.String(255), unique=True, nullable=False)
+    name = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+    def json(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "email": self.email,
+            "name": self.name,
+            "created_at": self.created_at
+        }
+
+
+app.config["JWT_SECRET_KEY"] = "48tpzfa+Uu1RH3Sy4wR4UjdK+MNjTuYqN6gaMSnX5/KpLoQ9/ijwrcaJ37b9yMO2e+4j0LW850H1xGJAic0MHQ=="
+jwt = JWTManager(app)
 
 @app.route('/api/health')
 def health_check():
@@ -37,48 +46,78 @@ def health_check():
 
 @app.route('/api/users', methods=['GET'])
 def get_users():
+    """Fetch all users"""
     users = User.query.all()
     return jsonify([{"id": u.id, "name": u.name, "email": u.email} for u in users])
 
-@app.route("/signup", methods=["POST"])
-def signup():
-    data = request.json
-    name = data.get('name') 
-    email = data.get('email')
-    password = data.get('password')
+@app.route("/register", methods=["POST"])
+def register():
+    """Registers a user with Supabase Auth and stores metadata including username."""
+    try:
+        data = request.get_json()
+        username = data.get("username")
+        email = data.get("email")
+        password = data.get("password")
+        name = data.get("name")
 
-    if not name or not email or not password:
-        return jsonify({"message": "Name, Email, and Password are required"}), 400
+        if not username or not email or not password:
+            return jsonify({"error": "Missing required fields"}), 400
 
-    hashed_password = bcrypt.generate_password_hash(password).decode("utf-8")
-    new_user = User(name=name, email=email, password=hashed_password)
+        response = sign_up_user(email, password)
 
-    db.session.add(new_user)
-    db.session.commit()
+        if "error" in response:
+            return jsonify(response), 400
 
-    return jsonify({"message": "User created successfully"}), 201
+        user_id = response["user_id"]
+
+        supabase_client.table("users").insert({
+            "id": user_id,
+            "username": username,
+            "email": email,
+            "name": name
+        }).execute()
+
+        return jsonify({"message": "User registered successfully"}), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route("/login", methods=["POST"])
 def login():
-    data = request.json
-    email = data.get("email")
-    password = data.get("password")
+    """Logs in a user using email or username."""
+    try:
+        data = request.get_json()
+        identifier = data.get("identifier")  # Can be email OR username
+        password = data.get("password")
 
-    user = User.query.filter_by(email=email).first()
-    if not user or not bcrypt.check_password_hash(user.password, password):
-        return jsonify({"message": "Invalid email or password"}), 401
+        if not identifier or not password:
+            return jsonify({"error": "Missing required fields"}), 400
 
-    access_token = create_access_token(identity={"email": user.email})
-    return jsonify({
-        "message": "Login successful",
-        "token": access_token,
-        "user": {"id": user.id, "name": user.name, "email": user.email}
-    })
+        user_query = supabase_client.table("users").select("email").eq("username", identifier).execute()
+        if not user_query.data or len(user_query.data) == 0:
+            user_query = supabase_client.table("users").select("email").eq("email", identifier).execute()
 
+        if not user_query.data or len(user_query.data) == 0:
+            return jsonify({"error": "User not found"}), 404
 
+        email = user_query.data[0]["email"]
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+        response = sign_in_user(email, password)
 
+        if "error" in response:
+            return jsonify(response), 401
 
+        access_token = create_access_token(identity=response["user_id"])
+        return jsonify({"access_token": access_token})
 
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route("/me", methods=["GET"])
+@jwt_required()
+def user_info():
+    """Fetch logged-in user details"""
+    access_token = request.headers.get("Authorization").split(" ")[1]
+    user_data = get_user_info(access_token)
+    return jsonify(user_data)
