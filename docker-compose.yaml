@@ -158,6 +158,21 @@ services:
       - app-network
       - default
     restart: always
+  group-order-service:
+    build: ./backend/group-order-service
+    working_dir: /app
+    ports:
+      - "5012:5000"
+    environment:
+      FLASK_APP: grouporder.py
+      FLASK_ENV: production
+      DATABASE_URL: postgresql://postgres.ioskwqelrdcangizpzij:postgres@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres
+    depends_on:
+      - db
+    networks:
+      - app-network
+      - default
+    restart: always
 
   ordermanagement-service:
     build: ./backend/ordermanagement-service # Corrected path

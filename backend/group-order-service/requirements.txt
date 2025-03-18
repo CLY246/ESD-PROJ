@@ -1,0 +1,11 @@
+Flask==3.0.1
+Flask-SQLAlchemy==3.1.1
+mysql-connector-python==8.3.0
+Flask-CORS
+mysql-connector-python
+gunicorn
+supabase
+python-dotenv
+uuid
+psycopg2-binary
+

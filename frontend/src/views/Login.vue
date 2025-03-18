@@ -24,13 +24,14 @@ import { loginUser, registerUser } from "@/services/authService";
 export default {
   data() {
     return {
-      isLogin: true, // Toggle between Login and Sign Up
+      isLogin: true,
       name: "",
       username: "",
-      identifier: "", // ✅ Supports both email & username for login
+      identifier: "",
       password: "",
       loading: false,
       errorMessage: "",
+      email: ""
     };
   },
   methods: {
@@ -47,9 +48,9 @@ export default {
 
       if (response.success) {
         if (this.isLogin) {
-          this.$router.push("/order"); // Redirect after successful login
+          this.$router.push("/order"); 
         } else {
-          this.isLogin = true; // Switch to login after registration
+          this.isLogin = true; 
         }
       } else {
         this.errorMessage = response.error;

@@ -45,9 +45,9 @@ export default {
   },
   async mounted() {
     // Check if user is logged in
-    const storedUser = localStorage.getItem("user");
+    const storedUser = localStorage.getItem("token");
     if (storedUser) {
-      this.user = JSON.parse(storedUser);
+      // this.user = JSON.parse(storedUser);
       this.userLoggedIn = true;
       this.fetchVendors();
     }

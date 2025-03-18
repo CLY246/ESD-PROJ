@@ -109,7 +109,7 @@ def login():
             return jsonify(response), 401
 
         access_token = create_access_token(identity=response["user_id"])
-        return jsonify({"access_token": access_token})
+        return jsonify({"access_token": access_token, "userid": response["user_id"]})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

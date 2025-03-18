@@ -27,11 +27,27 @@
             <router-link to="/order" class="nav-link">Order</router-link>
           </li>
           <li class="nav-item">
-            <router-link to="/login" class="nav-link">Login</router-link>
+            <router-link v-if="!isLoggedIn" to="/login" class="nav-link">Login</router-link>
           </li>
+          <button v-if="isLoggedIn" @click="logout">Logout</button>
         </ul>
       </div>
     </div>
   </nav>
 </template>
 
+<script>
+export default {
+  computed: {
+    isLoggedIn() {
+      return !!localStorage.getItem("token");
+    }
+  },
+  methods: {
+    logout() {
+      localStorage.removeItem("token");
+      this.$router.push("/login");
+    }
+  }
+};
+</script>

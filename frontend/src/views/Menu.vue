@@ -15,6 +15,11 @@
       </div>
     </div>
 
+    <button class="group-order-btn" @click="startGroupOrder">
+      Start Group Order
+    </button>
+
+
     <!-- Sticky Category Tabs -->
     <div class="sticky-tabs">
       <div class="category-tabs">
@@ -110,10 +115,11 @@
 
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import axios from "axios";
 
 const route = useRoute();
+const router = useRouter();
 const vendorId = route.params.id;
 const vendor = ref({});
 const menuItems = ref({});
@@ -136,6 +142,25 @@ const fetchMenuItems = async () => {
     menuItems.value = response.data; // Already categorized
   } catch (error) {
     console.error("Error fetching menu items:", error);
+  }
+};
+
+const startGroupOrder = async () => {
+  try {
+    const userId = localStorage.getItem("user_id");
+    const response = await axios.post("http://localhost:5012/group-order/invite", {
+      vendorId: vendorId,
+      userId: userId
+    });
+
+    const cartId = response.data.cartId;
+    // inviteLink.value = response.data.invite_link;
+
+    localStorage.setItem("shared_cart_id", cartId);
+    
+    router.push(`/group-order/join/${cartId}`);
+  } catch (error) {
+    console.error("Error starting group order:", error);
   }
 };
 
