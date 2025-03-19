@@ -55,7 +55,7 @@ INSERT INTO MenuItems (ItemID, VendorID, ItemName, Description, Price, Category,
 (14, 3, 'Unami Tuna Belly', 'Marinated hand-chopped Tuna, seaweed & water turnip', 8.50, 'Starters', 'https://images.squarespace-cdn.com/content/v1/64a2a6571409001ff0ef5f8d/6e0d60a6-0a6b-4e6b-b38e-d7c1419bb5b0/Sides+IG-01.png?format=1500w'),
 (15, 3, 'Seaweed Chicken', 'Homemade Wasabi Mayo ', 6.75, 'Starters', 'https://images.squarespace-cdn.com/content/v1/64a2a6571409001ff0ef5f8d/9562c49f-61d6-4416-9583-b9ac6ce9e8e6/Sides+IG-03.png?format=750w'),
 
-(16, 4, 'Kaya Milk Bun', '', 2.20, 'Bun', 'https://eatbook.sg/wp-content/uploads/2022/12/khoon-coffeehouse-express-buns-stack.jpg'),
+(16, 4, 'Kaya Milk Bun', '', 0.10, 'Bun', 'https://eatbook.sg/wp-content/uploads/2022/12/khoon-coffeehouse-express-buns-stack.jpg'),
 (17, 4, 'Lotus Biscoff Bun', '', 2.20, 'Bun', 'https://eatbook.sg/wp-content/uploads/2022/12/khoon-coffeehouse-express-biscoff-bun-1024x683.jpg'),
 (18, 4, 'Honey Butter Bun', '', 2.20, 'Bun', 'https://eatbook.sg/wp-content/uploads/2022/12/khoon-coffeehouse-express-toasting-buns-1024x683.jpg'),
 (19, 4, 'Peanut Butter Bun', '', 2.20, 'Bun', 'https://eatbook.sg/wp-content/uploads/2022/12/khoon-coffeehouse-express-toasting-buns-1024x683.jpg'),
