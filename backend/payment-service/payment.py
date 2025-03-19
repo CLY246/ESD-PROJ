@@ -3,11 +3,14 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from datetime import datetime
 import os
+import stripe
 
 app = Flask(__name__)
-CORS(app)
+# CORS(app)
+CORS(app, resources={r"/payments/*": {"origins": "*"}})
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:root@host.docker.internal:8889/payment"
+
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:root@host.docker.internal:3306/payment"
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
 
 db = SQLAlchemy(app)
@@ -36,27 +39,79 @@ class Transaction(db.Model):
 def health_check():
     return jsonify({"message": "Payment API is running!"})
 
+
+
+
+stripe.api_key = "sk_test_51R2Nh0Bz8bLJBV2onRtvizH4yVf4xcufKaJTXshVg1g42nDYe1M9hGnDeJsM4IWMWCBq1GNEQs0rZ53ue6hA08Xe00IXHYXH0R"
+
 @app.route("/payments", methods=["POST"])
 def process_payment():
     data = request.json
     order_id = data.get("OrderID")
     amount = data.get("Amount")
-    payment_method = data.get("PaymentMethod")
 
-    if not order_id or not amount or not payment_method:
-        return jsonify({"message": "OrderID, Amount, and PaymentMethod are required"}), 400
+    if not order_id or not amount:
+        return jsonify({"message": "OrderID and Amount are required"}), 400
 
-    new_transaction = Transaction(
-        OrderID=order_id,
-        Amount=amount,
-        PaymentMethod=payment_method,
-        PaymentStatus='Pending'  # Initially Pending
-    )
+    # Convert amount to cents for Stripe
+    amount_in_cents = int(float(amount) * 100)
 
-    db.session.add(new_transaction)
-    db.session.commit()
+    try:
+        # Create Stripe Checkout Session
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[
+                {
+                    "price_data": {
+                        "currency": "sgd",
+                        "product_data": {"name": "Restaurant Order"},
+                        "unit_amount": amount_in_cents,
+                    },
+                    "quantity": 1,
+                }
+            ],
+            mode="payment",
+            success_url="http://localhost:8080/success",
+            cancel_url="http://localhost:8080/cancel",
+        )
 
-    return jsonify({"message": "Payment initiated successfully", "transaction": new_transaction.json()}), 201
+        # Save transaction to DB
+        new_transaction = Transaction(
+            OrderID=order_id,
+            Amount=amount,
+            PaymentMethod="Stripe",
+            PaymentStatus="Pending"
+        )
+
+        db.session.add(new_transaction)
+        db.session.commit()
+
+        return jsonify({"message": "Payment initiated successfully", "session_url": session.url, "transaction": new_transaction.json()}), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# @app.route("/payments", methods=["POST"])
+# def process_payment():
+#     data = request.json
+#     order_id = data.get("OrderID")
+#     amount = data.get("Amount")
+#     payment_method = data.get("PaymentMethod")
+
+#     if not order_id or not amount or not payment_method:
+#         return jsonify({"message": "OrderID, Amount, and PaymentMethod are required"}), 400
+
+#     new_transaction = Transaction(
+#         OrderID=order_id,
+#         Amount=amount,
+#         PaymentMethod=payment_method,
+#         PaymentStatus='Pending'  # Initially Pending
+#     )
+
+#     db.session.add(new_transaction)
+#     db.session.commit()
+
+#     return jsonify({"message": "Payment initiated successfully", "transaction": new_transaction.json()}), 201
 
 @app.route("/payments/<int:order_id>", methods=["GET"])
 def get_payment_status(order_id):

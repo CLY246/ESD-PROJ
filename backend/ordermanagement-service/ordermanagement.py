@@ -148,7 +148,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Database Configuration
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:root@host.docker.internal:8889/order_queue_management"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:root@host.docker.internal:3306/order_queue_management"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
 

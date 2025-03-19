@@ -130,3 +130,4 @@ def get_menu_items(vendor_id):
 
     return jsonify(categorized_menu)
 
+

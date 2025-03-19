@@ -92,7 +92,7 @@ from rabbitmq import amqp_setup
 app = Flask(__name__)
 CORS(app)
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:root@host.docker.internal:8889/error"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:root@host.docker.internal:3306/error"
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
 
 db = SQLAlchemy(app)
