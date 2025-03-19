@@ -103,7 +103,15 @@
           <!-- Sticky Footer (Total & Payment Button) -->
           <div class="cart-footer">
             <p class="fw-bold">Total: ${{ totalPrice }}</p>
-            <button class="btn btn-dark w-100">
+            <StripeCheckout ref="checkoutRef"
+              mode="payment"
+              :pk="publishableKey"
+              :line-items="lineItems"
+              :success-url="successURL"
+              :cancel-url="cancelURL"
+              @loading="v => loading = v"
+            />
+            <button class="btn btn-dark w-100" @click="submitPayment">
               Review Payment and Address
             </button>
           </div>
@@ -117,6 +125,7 @@
 import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import axios from "axios";
+import { StripeCheckout } from "@vue-stripe/vue-stripe";
 
 const route = useRoute();
 const router = useRouter();
@@ -124,6 +133,25 @@ const vendorId = route.params.id;
 const vendor = ref({});
 const menuItems = ref({});
 const cart = ref([]);
+
+const loading = ref(false);
+
+// Stripe Variables
+const publishableKey = ref("pk_test_51R2Nh0Bz8bLJBV2o8mzAgS2z1jPVz0RVXTsJLF2lcH6TNpbfiOWNDhqF5it1GN2KkT8n7NUqltpJU7uAx5yIPuyl00umDgnPUu");
+const successURL = ref("http://localhost:8080/success");
+const cancelURL = ref("http://localhost:8080/cancel");
+
+// Compute Line Items for Stripe
+const lineItems = computed(() =>
+  cart.value.map(item => ({
+    price_data: {
+      currency: "sgd",
+      product_data: { name: item.ItemName },
+      unit_amount: Math.round(item.Price * 100),
+    },
+    quantity: 1
+  }))
+);
 
 const fetchVendor = async () => {
   try {
@@ -161,6 +189,26 @@ const startGroupOrder = async () => {
     router.push(`/group-order/join/${cartId}`);
   } catch (error) {
     console.error("Error starting group order:", error);
+  }
+};
+
+const submitPayment = async () => {
+  try {
+    const response = await axios.post("http://localhost:5005/payments", {
+      OrderID: new Date().getTime(), // Generate a temporary OrderID
+      Amount: totalPrice.value,
+      PaymentMethod: "Stripe"
+    });
+
+    if (response.data.session_url) {
+      // Redirect to Stripe Checkout URL
+      window.location.href = response.data.session_url;
+    } else {
+      alert("Error initiating payment.");
+    }
+  } catch (error) {
+    console.error("Payment error:", error);
+    alert("Failed to initiate payment.");
   }
 };
 
