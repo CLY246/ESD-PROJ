@@ -130,4 +130,17 @@ def get_menu_items(vendor_id):
 
     return jsonify(categorized_menu)
 
+@app.route("/menuitem/<int:item_id>", methods=["GET"])
+def get_menu_item(item_id):
+    item = MenuItem.query.filter_by(ItemID=item_id).first()
 
+    if not item:
+        return jsonify({"message": "Item not found"}), 404
+
+    return jsonify({
+        "ItemID": item.ItemID,
+        "ItemName": item.ItemName,
+        "Description": item.Description,
+        "Price": item.Price,
+        "ImageURL": item.ImageURL
+    })
