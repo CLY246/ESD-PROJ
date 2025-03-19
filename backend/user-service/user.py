@@ -121,3 +121,12 @@ def user_info():
     access_token = request.headers.get("Authorization").split(" ")[1]
     user_data = get_user_info(access_token)
     return jsonify(user_data)
+
+@app.route("/username/<user_id>", methods=["GET"])
+def get_user(user_id):
+    user = User.query.filter_by(id=user_id).first()
+    
+    if user:
+        return jsonify({"UserID": user.id, "Username": user.username})
+    else:
+        return jsonify({"error": "User not found"}), 404

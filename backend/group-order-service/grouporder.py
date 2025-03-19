@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
@@ -6,10 +9,11 @@ import uuid
 from flask_socketio import SocketIO, emit, join_room
 from supabase import create_client
 import os
+
 from datetime import datetime
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*") 
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 
 CORS(app)  
 
@@ -66,6 +70,15 @@ def create_group_order():
 
     return jsonify({"invite_link": invite_link, "cartId": str(shared_cart_id)})
 
+@app.route("/group-order/<cart_id>/vendor", methods=["GET"])
+def get_vendor_from_cart(cart_id):
+    cart = SharedCart.query.filter_by(CartID=cart_id).first()
+    if not cart:
+        return jsonify({"error": "Shared cart not found"}), 404
+
+    return jsonify({"cartId": cart_id, "vendorId": cart.VendorID})
+
+
 @app.route("/group-order/join/<cart_id>", methods=["POST"])
 def join_group_order(cart_id):
     data = request.get_json()
@@ -98,13 +111,13 @@ def add_item_to_cart(cart_id):
     db.session.add(new_item)
     db.session.commit()
 
-    cart_items = CartItem.query.filter_by(CartID=cart_id).all()
+    cart_items = CartItem.query.filter_by(Cart_ID=cart_id).all()
     updated_cart = [
         {"ID": item.ID, "Item_ID": item.Item_ID, "Quantity": item.Quantity}
         for item in cart_items
     ]
-    socketio.emit("cart_updated", {"cartId": cart_id, "items": updated_cart}, room=cart_id)
 
+    socketio.emit("cart_updated", {"cartId": cart_id, "items": updated_cart}, to=None)
 
     return jsonify({"message": "Item added successfully", "cartId": cart_id})
 
@@ -116,7 +129,13 @@ def get_cart_items(cart_id):
         return jsonify({"message": "Cart is empty", "cartId": cart_id})
 
     items = [
-        {"ID": item.id, "Item_ID": item.item_id, "User_ID": item.user_id, "Quantity": item.quantity, "Added_at": item.added_at}
+        {
+            "ID": item.ID,
+            "Item_ID": item.Item_ID,
+            "User_ID": item.User_ID,
+            "Quantity": item.Quantity,
+            "Added_at": item.Added_at
+        }
         for item in cart_items
     ]
     return jsonify({"CartID": cart_id, "Items": items})
@@ -131,13 +150,14 @@ def remove_item_from_cart(cart_id, item_id):
     db.session.delete(item)
     db.session.commit()
 
-    cart_items = CartItem.query.filter_by(CartID=cart_id).all()
+    cart_items = CartItem.query.filter_by(Cart_ID=cart_id).all()
     updated_cart = [
         {"ID": item.ID, "Item_ID": item.Item_ID, "Quantity": item.Quantity}
         for item in cart_items
     ]
-    socketio.emit("cart_updated", {"cartId": cart_id, "items": updated_cart}, room=cart_id)
-    
+
+    socketio.emit("cart_updated", {"cartId": cart_id, "items": updated_cart}, to=None)
+
     return jsonify({"message": "Item removed successfully", "cartId": cart_id})
 
 
@@ -146,3 +166,13 @@ def clear_cart(cart_id):
     CartItem.query.filter_by(Cart_ID=cart_id).delete()
     db.session.commit()
     return jsonify({"message": "Cart cleared successfully", "cartId": cart_id})
+
+
+@socketio.on("connect")
+def handle_connect():
+    print("WebSocket Connected!")
+    emit("message", {"status": "connected"}, broadcast=True)
+
+@socketio.on("disconnect")
+def handle_disconnect():
+    print("WebSocket Disconnected")
