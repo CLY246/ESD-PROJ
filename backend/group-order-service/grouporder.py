@@ -10,12 +10,15 @@ from flask_socketio import SocketIO, emit, join_room
 from supabase import create_client
 import os
 import json
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 
 from datetime import datetime
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+
 
 CORS(app)  
 
@@ -49,9 +52,9 @@ with app.app_context():
 
 @socketio.on("join_cart")
 def join_cart(data):
-    cart_id = data.get("cartId")
-    print(f"Joining cart room: {cart_id}")
-    join_room(str(cart_id)) 
+    cart_id = str(data.get("cartId"))
+    join_room(cart_id)
+    logging.info(f"User joined room {cart_id}")
     emit("cart_message", {"message": f"User joined cart {cart_id}"}, room=cart_id)
 
 
@@ -123,7 +126,7 @@ def add_item_to_cart(cart_id):
         for item in cart_items
     ]
     print("Emitting cart_updated event:", json.dumps({"cartId": cart_id, "items": updated_cart}, indent=2))
-    socketio.emit("cart_updated", {"cartId": cart_id, "items": updated_cart}, room=str(cart_id), to=None)
+    socketio.emit("cart_updated", {"cartId": cart_id, "items": updated_cart}, room=str(cart_id), namespace="/")
 
     return jsonify({"message": "Item added successfully", "cartId": cart_id})
 
@@ -162,7 +165,7 @@ def remove_item_from_cart(cart_id, item_id):
         for item in cart_items
     ]
     print("Emitting cart_updated event:", json.dumps({"cartId": cart_id, "items": updated_cart}, indent=2))
-    socketio.emit("cart_updated", {"cartId": cart_id, "items": updated_cart}, room=str(cart_id), to=None)
+    socketio.emit("cart_updated", {"cartId": cart_id, "items": updated_cart}, room=str(cart_id),namespace="/")
 
     return jsonify({"message": "Item removed successfully", "cartId": cart_id})
 
@@ -182,3 +185,10 @@ def handle_connect():
 @socketio.on("disconnect")
 def handle_disconnect():
     print("WebSocket Disconnected")
+
+gunicorn_app = app
+if __name__ != "__main__":
+    gunicorn_app = app  # Gunicorn looks for `grouporder:gunicorn_app`
+
+if __name__ == "__main__":
+    socketio.run(app, host="0.0.0.0", port=5000, allow_unsafe_werkzeug=True)
