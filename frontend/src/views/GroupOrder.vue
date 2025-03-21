@@ -122,6 +122,7 @@
 import { io } from "socket.io-client";
 import axios from "axios";
 
+
 const socket = io("http://localhost:5012", {
   transports: ["websocket", "polling"],
   reconnection: true,
@@ -157,6 +158,7 @@ export default {
 
       if (data.cartId === this.cartId) {
         console.log("Fetching updated cart details...", data.items);
+        await this.fetchSharedCart();
         const menuPromises = data.items.map(async (item) => {
           try {
             const menuResponse = await axios.get(

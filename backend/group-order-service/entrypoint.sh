@@ -1,6 +1,9 @@
 #!/bin/sh
-echo "Running database migrations..."
-flask db upgrade 
+# export FLASK_APP=grouporder.py 
 
-echo "Starting Flask application..."
-exec gunicorn -b 0.0.0.0:5000 grouporder:app --worker-class eventlet --workers 1 --timeout 300
+# echo "Running database migrations..."
+# flask db upgrade 
+
+echo "Starting Flask SocketIO application..."
+exec gunicorn grouporder:gunicorn_app --bind 0.0.0.0:5000 --worker-class eventlet --timeout 300
+
