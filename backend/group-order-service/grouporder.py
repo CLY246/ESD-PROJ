@@ -50,8 +50,10 @@ with app.app_context():
 @socketio.on("join_cart")
 def join_cart(data):
     cart_id = data.get("cartId")
-    join_room(cart_id)  
+    print(f"Joining cart room: {cart_id}")
+    join_room(str(cart_id)) 
     emit("cart_message", {"message": f"User joined cart {cart_id}"}, room=cart_id)
+
 
 
 @app.route("/group-order/invite", methods=["POST"])
@@ -121,7 +123,7 @@ def add_item_to_cart(cart_id):
         for item in cart_items
     ]
     print("Emitting cart_updated event:", json.dumps({"cartId": cart_id, "items": updated_cart}, indent=2))
-    socketio.emit("cart_updated", {"cartId": cart_id, "items": updated_cart}, to=None)
+    socketio.emit("cart_updated", {"cartId": cart_id, "items": updated_cart}, room=str(cart_id))
 
     return jsonify({"message": "Item added successfully", "cartId": cart_id})
 
@@ -160,7 +162,7 @@ def remove_item_from_cart(cart_id, item_id):
         for item in cart_items
     ]
     print("Emitting cart_updated event:", json.dumps({"cartId": cart_id, "items": updated_cart}, indent=2))
-    socketio.emit("cart_updated", {"cartId": cart_id, "items": updated_cart}, to=None)
+    socketio.emit("cart_updated", {"cartId": cart_id, "items": updated_cart}, room=str(cart_id))
 
     return jsonify({"message": "Item removed successfully", "cartId": cart_id})
 
