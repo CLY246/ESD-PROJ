@@ -117,7 +117,9 @@ volumes:
   
 networks:
   app-network:
-    driver: bridge
+    external:
+      name: esd-proj_app-network
+
 
 services:
   rabbitmq:
