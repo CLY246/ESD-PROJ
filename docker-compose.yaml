@@ -117,9 +117,7 @@ volumes:
   
 networks:
   app-network:
-    external:
-      name: esd-proj_app-network
-
+    driver: bridge
 
 services:
   rabbitmq:
@@ -133,6 +131,12 @@ services:
       - "15672:15672"
     volumes: 
       - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      timeout: 10s
 
   user-service:
     build: ./backend/user-service
