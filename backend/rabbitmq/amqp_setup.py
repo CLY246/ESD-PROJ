@@ -64,10 +64,11 @@
 
 import pika
 import sys
+from os import environ
 
 # RabbitMQ Connection Parameters
-RABBIT_HOST = "rabbitmq"  # Service name in docker-compose
-RABBIT_PORT = 5672
+RABBIT_HOST = hostname = environ.get('rabbit_host') or 'localhost'
+RABBIT_PORT = environ.get('rabbit_port') or 5672
 EXCHANGE_NAME = "order_topic"
 EXCHANGE_TYPE = "topic"
 
@@ -88,8 +89,8 @@ def connect():
             pika.ConnectionParameters(
                 host=RABBIT_HOST,
                 port=RABBIT_PORT,
-                heartbeat=300,
-                blocked_connection_timeout=300,
+                heartbeat=3600,
+                blocked_connection_timeout=3600,
             )
         )
         channel = connection.channel()
