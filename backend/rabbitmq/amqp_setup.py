@@ -1,116 +1,76 @@
-# #!/usr/bin/env python3
-
-# """
-# AMQP Setup: Creates exchanges and queues on RabbitMQ.
-# """
-
-# import pika
-# import sys
-
-# # RabbitMQ Connection Parameters
-# RABBIT_HOST = "rabbitmq"  # Use the service name in docker-compose
-# RABBIT_PORT = 5672
-# EXCHANGE_NAME = "order_topic"
-# EXCHANGE_TYPE = "topic"
-
-# # Define queues and routing keys
-# QUEUES = {
-#     "Error": "*.error",
-#     "Activity_Log": "#",
-#     "Notification": "order.notification",
-# }
-
-
-# def create_exchange_and_queues():
-#     """
-#     Connect to RabbitMQ, declare exchange and queues, then bind them with routing keys.
-#     """
-#     try:
-#         print(f"📡 Connecting to RabbitMQ at {RABBIT_HOST}:{RABBIT_PORT}...")
-#         connection = pika.BlockingConnection(
-#             pika.ConnectionParameters(
-#                 host=RABBIT_HOST,
-#                 port=RABBIT_PORT,
-#                 heartbeat=300,
-#                 blocked_connection_timeout=300,
-#             )
-#         )
-#         channel = connection.channel()
-
-#         # Declare Exchange
-#         print(f"🔄 Declaring Exchange: {EXCHANGE_NAME} ({EXCHANGE_TYPE})")
-#         channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type=EXCHANGE_TYPE, durable=True)
-
-#         # Declare and bind queues
-#         for queue_name, routing_key in QUEUES.items():
-#             print(f"✅ Declaring Queue: {queue_name} (Routing Key: {routing_key})")
-#             channel.queue_declare(queue=queue_name, durable=True)
-#             channel.queue_bind(exchange=EXCHANGE_NAME, queue=queue_name, routing_key=routing_key)
-
-#         print("🎉 AMQP Setup Complete! RabbitMQ is ready.")
-#         connection.close()
-
-#     except Exception as e:
-#         print(f"❌ Error setting up RabbitMQ: {e}")
-#         sys.exit(1)
-
-
-# if __name__ == "__main__":
-#     create_exchange_and_queues()
-
-
-
-
-
 import pika
-import sys
 from os import environ
 
-# RabbitMQ Connection Parameters
-RABBIT_HOST = hostname = environ.get('rabbit_host') or 'localhost'
-RABBIT_PORT = environ.get('rabbit_port') or 5672
-EXCHANGE_NAME = "order_topic"
-EXCHANGE_TYPE = "topic"
+# These module-level variables are initialized whenever a new instance of python interpreter imports the module;
+# In each instance of python interpreter (i.e., a program run), the same module is only imported once (guaranteed by the interpreter).
+hostname = environ.get('rabbit_host') or 'localhost'  # Default to 'localhost' if no environment variable is set
+port = environ.get('rabbit_port') or 5672  # Default to 5672 if no environment variable is set
 
-# Define queues and routing keys
-QUEUES = {
-    "Error": "*.error",
-    "Activity_Log": "#",
-    "Notification": "order.notification",
-}
+# Connect to the broker and set up a communication channel in the connection
+connection = pika.BlockingConnection(
+    pika.ConnectionParameters(
+        host=hostname, port=port,
+        heartbeat=3600, blocked_connection_timeout=3600,  # These parameters to prolong the expiration time (in seconds) of the connection
+    )
+)
 
-def connect():
-    """
-    Connect to RabbitMQ and return the channel.
-    """
-    try:
-        print(f"📡 Connecting to RabbitMQ at {RABBIT_HOST}:{RABBIT_PORT}...")
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters(
-                host=RABBIT_HOST,
-                port=RABBIT_PORT,
-                heartbeat=3600,
-                blocked_connection_timeout=3600,
-            )
-        )
+channel = connection.channel()
+
+# Set up the exchange if the exchange doesn't exist
+exchangename = "order_topic"
+exchangetype = "topic"
+channel.exchange_declare(exchange=exchangename, exchange_type=exchangetype, durable=True)
+# 'durable' makes the exchange survive broker restarts
+
+# Declare and bind all needed queues
+def setup_queues():
+    # Error queue setup
+    queue_name = 'error'
+    channel.queue_declare(queue=queue_name, durable=True)
+    channel.queue_bind(exchange=exchangename, queue=queue_name, routing_key='*.error')
+
+    # Activity_log queue setup
+    queue_name = 'activity_log'
+    channel.queue_declare(queue=queue_name, durable=True)
+    channel.queue_bind(exchange=exchangename, queue=queue_name, routing_key='#')
+
+    # Order_notification queue setup
+    queue_name = 'order_notification'
+    channel.queue_declare(queue=queue_name, durable=True)
+    channel.queue_bind(exchange=exchangename, queue=queue_name, routing_key='*.order.notification')
+
+setup_queues()
+
+"""
+This function in this module sets up a connection and a channel to a local AMQP broker,
+and declares a 'topic' exchange to be used by the microservices in the solution.
+"""
+def check_setup():
+    global connection, channel, hostname, port, exchangename, exchangetype
+
+    if not is_connection_open(connection):
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host=hostname, port=port, heartbeat=3600, blocked_connection_timeout=3600))
         channel = connection.channel()
+        channel.exchange_declare(exchange=exchangename, exchange_type=exchangetype, durable=True)
+        setup_queues()  # Re-declare the queues if the connection is reset
 
-        print(f"🔄 Declaring Exchange: {EXCHANGE_NAME} ({EXCHANGE_TYPE})")
-        channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type=EXCHANGE_TYPE, durable=True)
+def is_connection_open(connection):
+    try:
+        connection.process_data_events()
+        return True
+    except pika.exceptions.AMQPError as e:
+        print("AMQP Error:", e)
+        print("...creating a new connection.")
+        return False
 
-        # Declare and bind queues
-        for queue_name, routing_key in QUEUES.items():
-            print(f"✅ Declaring Queue: {queue_name} (Routing Key: {routing_key})")
-            channel.queue_declare(queue=queue_name, durable=True)
-            channel.queue_bind(exchange=EXCHANGE_NAME, queue=queue_name, routing_key=routing_key)
-
-        print("🎉 AMQP Setup Complete! RabbitMQ is ready.")
-        return connection, channel  # Return the connection and channel
-
-    except Exception as e:
-        print(f"❌ Error setting up RabbitMQ: {e}")
-        sys.exit(1)
-
+# Ensure that the connection is closed when no longer needed
+def close_connection():
+    if connection and connection.is_open:
+        connection.close()
 
 if __name__ == "__main__":
-    connect()
+    try:
+        # Simulating the use of the connection
+        print("📡 RabbitMQ setup completed successfully.")
+    finally:
+        close_connection()  # Close the connection gracefully after usage
