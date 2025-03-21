@@ -9,6 +9,8 @@ import uuid
 from flask_socketio import SocketIO, emit, join_room
 from supabase import create_client
 import os
+import json
+
 
 from datetime import datetime
 
@@ -113,10 +115,12 @@ def add_item_to_cart(cart_id):
 
     cart_items = CartItem.query.filter_by(Cart_ID=cart_id).all()
     updated_cart = [
-        {"ID": item.ID, "Item_ID": item.Item_ID, "Quantity": item.Quantity}
+        {
+            "ID": str(item.ID),"Item_ID": str(item.Item_ID),"Quantity": item.Quantity,"User_ID": str(item.User_ID)
+        }
         for item in cart_items
     ]
-
+    print("Emitting cart_updated event:", json.dumps({"cartId": cart_id, "items": updated_cart}, indent=2))
     socketio.emit("cart_updated", {"cartId": cart_id, "items": updated_cart}, to=None)
 
     return jsonify({"message": "Item added successfully", "cartId": cart_id})
@@ -152,10 +156,10 @@ def remove_item_from_cart(cart_id, item_id):
 
     cart_items = CartItem.query.filter_by(Cart_ID=cart_id).all()
     updated_cart = [
-        {"ID": item.ID, "Item_ID": item.Item_ID, "Quantity": item.Quantity}
+        { "ID": str(item.ID),"Item_ID": str(item.Item_ID),"Quantity": item.Quantity,"User_ID": str(item.User_ID)}
         for item in cart_items
     ]
-
+    print("Emitting cart_updated event:", json.dumps({"cartId": cart_id, "items": updated_cart}, indent=2))
     socketio.emit("cart_updated", {"cartId": cart_id, "items": updated_cart}, to=None)
 
     return jsonify({"message": "Item removed successfully", "cartId": cart_id})

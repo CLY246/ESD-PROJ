@@ -145,10 +145,10 @@ export default {
       sharedCart: [],
     };
   },
-  async mounted() {
+  mounted() {
     this.cartId = this.$route.params.cartId;
-    await this.fetchVendorFromCart();
-    await this.fetchSharedCart();
+    this.fetchVendorFromCart();
+    this.fetchSharedCart();
 
     socket.emit("join_cart", { cartId: this.cartId });
 
@@ -156,12 +156,37 @@ export default {
       console.log("WebSocket cart updated:", data);
 
       if (data.cartId === this.cartId) {
-        console.log("Fetching updated cart details...");
+        console.log("Fetching updated cart details...", data.items);
+        const menuPromises = data.items.map(async (item) => {
+          try {
+            const menuResponse = await axios.get(
+              `http://localhost:5002/menuitem/${item.Item_ID}`
+            );
+            // Fetch user details (username)
+            const userResponse = await axios.get(
+              `http://localhost:5001/username/${item.User_ID}`
+            );
+            const userData = userResponse.data;
+            return { ...item, ...menuResponse.data, Username: userData.Username || "Unknown User" };
+          } catch (error) {
+            console.error("Error fetching menu details:", error);
+            return {
+              ...item,
+              ItemName: "Unknown Item",
+              Price: 0.0,
+              ImageURL: "",
+            };
+          }
+        });
 
-        // Call fetchSharedCart to get full details (ItemName, Price, etc.)
-        await this.fetchSharedCart();
+        this.sharedCart = await Promise.all(menuPromises);
       }
     });
+  },
+  beforeUnmount() {
+    if (this.socket) {
+      this.socket.disconnect();
+    }
   },
   computed: {
     totalPrice() {

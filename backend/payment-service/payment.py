@@ -7,10 +7,11 @@ import stripe
 
 app = Flask(__name__)
 # CORS(app)
-CORS(app, resources={r"/payments/*": {"origins": "*"}})
+# CORS(app, resources={r"/payments/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:root@host.docker.internal:3306/payment"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:root@host.docker.internal:8889/payment"
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
 
 db = SQLAlchemy(app)
@@ -76,17 +77,18 @@ def process_payment():
         )
 
         # Save transaction to DB
-        new_transaction = Transaction(
-            OrderID=order_id,
-            Amount=amount,
-            PaymentMethod="Stripe",
-            PaymentStatus="Pending"
-        )
+        # new_transaction = Transaction(
+        #     OrderID=order_id,
+        #     Amount=amount,
+        #     PaymentMethod="Stripe",
+        #     PaymentStatus="Pending"
+        # )
 
-        db.session.add(new_transaction)
-        db.session.commit()
+        # db.session.add(new_transaction)
+        # db.session.commit()
 
-        return jsonify({"message": "Payment initiated successfully", "session_url": session.url, "transaction": new_transaction.json()}), 201
+        return jsonify({"message": "Payment initiated successfully", "session_url": session.url}), 201
+        # return jsonify({"message": "Payment initiated successfully", "session_url": session.url, "transaction": new_transaction.json()}), 201
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500

@@ -192,25 +192,49 @@ const startGroupOrder = async () => {
   }
 };
 
+// const submitPayment = async () => {
+//   try {
+//     const response = await axios.post("http://localhost:5005/payments", {
+//       OrderID: new Date().getTime(), // Generate a temporary OrderID
+//       Amount: totalPrice.value,
+//       PaymentMethod: "Stripe"
+//     });
+
+//     if (response.data.session_url) {
+//       // Redirect to Stripe Checkout URL
+//       window.location.href = response.data.session_url;
+//     } else {
+//       alert("Error initiating payment.");
+//     }
+//   } catch (error) {
+//     console.error("Payment error:", error);
+//     alert("Failed to initiate payment.");
+//   }
+// };
 const submitPayment = async () => {
   try {
-    const response = await axios.post("http://localhost:5005/payments", {
-      OrderID: new Date().getTime(), // Generate a temporary OrderID
-      Amount: totalPrice.value,
-      PaymentMethod: "Stripe"
-    });
+    const response = await axios.post(
+      "http://localhost:5005/payments",
+      {
+        OrderID: new Date().getTime(), // Generate a temporary OrderID
+        Amount: totalPrice.value,
+      },
+      {
+        headers: { "Content-Type": "application/json" }, // Ensure JSON format
+      }
+    );
 
     if (response.data.session_url) {
-      // Redirect to Stripe Checkout URL
-      window.location.href = response.data.session_url;
+      window.location.href = response.data.session_url; // Redirect to Stripe
     } else {
       alert("Error initiating payment.");
     }
   } catch (error) {
-    console.error("Payment error:", error);
+    console.error("Payment error:", error.response?.data || error);
     alert("Failed to initiate payment.");
   }
 };
+
 
 onMounted(() => {
   fetchVendor();
