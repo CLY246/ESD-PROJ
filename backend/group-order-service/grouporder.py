@@ -125,7 +125,7 @@ def add_item_to_cart(cart_id):
         }
         for item in cart_items
     ]
-    print("Emitting cart_updated event:", json.dumps({"cartId": cart_id, "items": updated_cart}, indent=2))
+    logging.info("Emitting cart_updated event:", json.dumps({"cartId": cart_id, "items": updated_cart}, indent=2))
     socketio.emit("cart_updated", {"cartId": cart_id, "items": updated_cart}, room=str(cart_id), namespace="/")
 
     return jsonify({"message": "Item added successfully", "cartId": cart_id})
@@ -164,7 +164,7 @@ def remove_item_from_cart(cart_id, item_id):
         { "ID": str(item.ID),"Item_ID": str(item.Item_ID),"Quantity": item.Quantity,"User_ID": str(item.User_ID)}
         for item in cart_items
     ]
-    print("Emitting cart_updated event:", json.dumps({"cartId": cart_id, "items": updated_cart}, indent=2))
+    logging.info("Emitting cart_updated event:", json.dumps({"cartId": cart_id, "items": updated_cart}, indent=2))
     socketio.emit("cart_updated", {"cartId": cart_id, "items": updated_cart}, room=str(cart_id),namespace="/")
 
     return jsonify({"message": "Item removed successfully", "cartId": cart_id})
@@ -179,12 +179,12 @@ def clear_cart(cart_id):
 
 @socketio.on("connect")
 def handle_connect():
-    print("WebSocket Connected!")
+    logging.info("WebSocket Connected!")
     emit("message", {"status": "connected"}, broadcast=True)
 
 @socketio.on("disconnect")
 def handle_disconnect():
-    print("WebSocket Disconnected")
+    logging.info("WebSocket Disconnected")
 
 gunicorn_app = app
 if __name__ != "__main__":

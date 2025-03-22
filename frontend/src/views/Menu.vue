@@ -156,7 +156,7 @@ const lineItems = computed(() =>
 const fetchVendor = async () => {
   try {
     const response = await axios.get(
-      `http://localhost:5002/vendors/${vendorId}`
+      `http://localhost:8000/vendors/${vendorId}`
     );
     vendor.value = response.data;
   } catch (error) {
@@ -166,7 +166,7 @@ const fetchVendor = async () => {
 
 const fetchMenuItems = async () => {
   try {
-    const response = await axios.get(`http://localhost:5002/menu/${vendorId}`);
+    const response = await axios.get(`http://localhost:8000/menu/${vendorId}`);
     menuItems.value = response.data; // Already categorized
   } catch (error) {
     console.error("Error fetching menu items:", error);

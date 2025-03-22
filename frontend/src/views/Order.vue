@@ -55,7 +55,7 @@ export default {
   methods: {
     async fetchVendors() {
       try {
-        const response = await fetch("http://localhost:5002/vendors"); // Fetch vendors from backend
+        const response = await fetch("http://localhost:8000/vendors"); // Fetch vendors from backend
         this.vendors = await response.json();
         console.log(this.vendors);
       } catch (error) {
