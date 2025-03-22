@@ -67,6 +67,8 @@ services:
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
       KONG_ADMIN_GUI_URL: http://localhost:8002
+    volumes:
+      - ./kong.yaml:/usr/local/kong/declarative/kong.yaml
     depends_on:
       - kong-migration
     ports: # https://docs.konghq.com/gateway/latest/production/networking/default-ports/

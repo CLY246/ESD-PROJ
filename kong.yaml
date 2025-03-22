@@ -1,0 +1,59 @@
+_format_version: "3.0"
+_transform: true
+
+services:
+  - name: user-service
+    url: http://user-service:5000
+    routes:
+      - name: register
+        paths: ["/register"]
+        methods: ["POST"]
+        strip_path: false
+      - name: get-username
+        paths: [~^/username/([a-zA-Z0-9\-]+)]
+        strip_path: false
+        methods: ["GET"]
+      - name: login
+        paths: ["/login"]
+        methods: ["POST"]
+        strip_path: false
+
+  - name: group-order-service
+    url: http://group-order-service:5000
+    routes:
+      - name: add-sharedcart-item
+        paths: [~^/group-order/([a-zA-Z0-9\-]+)]
+        methods: ["POST"]
+        strip_path: false
+      - name: get-sharedcart-items
+        paths: [~^/group-order/([a-zA-Z0-9\-]+)]
+        strip_path: false
+        methods: ["GET"]
+      - name: create-sharedcart
+        paths: ["/group-order/invite"]
+        methods: ["POST"]
+        strip_path: false
+      - name: get-sharedcart-vendor
+        paths: [~^/group-order/([a-zA-Z0-9\-]+)]
+        methods: ["GET"]
+        strip_path: false
+      - name: remove-sharedcart-item
+        paths: [~^/group-order/([a-zA-Z0-9\-]+)]
+        methods: ["DELETE"]
+        strip_path: false
+
+  - name: vendor-service
+    url: http://vendor-service:5000
+    routes:
+      - name: get_menuitems
+        paths: [~^/menu/([a-zA-Z0-9\-]+)]
+        methods: ["GET"]
+        strip_path: false
+      - name: get-vendors
+        paths: ["/vendors"]
+        methods: ["GET"]
+        strip_path: false
+      - name: get_vendor
+        paths: [~^/vendors/([a-zA-Z0-9\-]+)]
+        methods: ["GET"]
+        strip_path: false
