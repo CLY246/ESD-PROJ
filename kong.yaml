@@ -9,10 +9,13 @@ services:
         paths: ["/register"]
         methods: ["POST"]
         strip_path: false
+
       - name: get-username
-        paths: ["~^/username/([a-zA-Z0-9\\-]+)"]
+        paths: ["~/username/([a-zA-Z0-9\\-]+)"]
         methods: ["GET"]
         strip_path: false
+        regex_priority: 1
+
       - name: login
         paths: ["/login"]
         methods: ["POST"]
@@ -22,38 +25,50 @@ services:
     url: http://group-order-service:5000
     routes:
       - name: add-sharedcart-item
-        paths: ["~^/group-order/([a-zA-Z0-9\\-]+)"]
+        paths: ["~/group-order/([a-zA-Z0-9\\-]+)/add"]
         methods: ["POST"]
         strip_path: false
+        regex_priority: 1
+
       - name: get-sharedcart-items
-        paths: ["~^/group-order/([a-zA-Z0-9\\-]+)"]
+        paths: ["~/group-order/([a-zA-Z0-9\\-]+)/items"]
         methods: ["GET"]
         strip_path: false
+        regex_priority: 1
+
       - name: create-sharedcart
         paths: ["/group-order/invite"]
         methods: ["POST"]
         strip_path: false
+
       - name: get-sharedcart-vendor
-        paths: ["~^/group-order/([a-zA-Z0-9\\-]+)"]
+        paths: ["~/group-order/([a-zA-Z0-9\\-]+)/vendor"]
         methods: ["GET"]
         strip_path: false
+        regex_priority: 1
+
       - name: remove-sharedcart-item
-        paths: ["~^/group-order/([a-zA-Z0-9\\-]+)"]
+        paths: ["~/group-order/([a-zA-Z0-9\\-]+)/remove"]
         methods: ["DELETE"]
         strip_path: false
+        regex_priority: 1
 
   - name: vendor-service
     url: http://vendor-service:5000
     routes:
       - name: get_menuitems
-        paths: ["~^/menu/([a-zA-Z0-9\\-]+)"]
+        paths: ["~/menu/([a-zA-Z0-9\\-]+)"]
         methods: ["GET"]
         strip_path: false
+        regex_priority: 1
+
       - name: get-vendors
         paths: ["/vendors"]
         methods: ["GET"]
         strip_path: false
+
       - name: get_vendor
-        paths: ["~^/vendors/([a-zA-Z0-9\\-]+)"]
+        paths: ["~/vendors/([a-zA-Z0-9\\-]+)"]
         methods: ["GET"]
         strip_path: false
+        regex_priority: 1

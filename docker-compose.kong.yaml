@@ -92,5 +92,5 @@ services:
       /bin/sh -c "
       echo 'Waiting for Kong...' &&
       sleep 10 &&
-      deck gateway sync /kong.yaml --kong-addr http://kong:8001
+      deck sync --kong-addr http://kong:8001 --state /kong.yaml
       "
