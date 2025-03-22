@@ -67,11 +67,7 @@ services:
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
       KONG_ADMIN_GUI_URL: http://localhost:8002
-      KONG_ENFORCE_RBAC: "on"
-      KONG_ADMIN_GUI_AUTH: basic-auth
-      KONG_ADMIN_GUI_SESSION_CONF: >
-        {"cookie_name":"admin_session","secret":"super_secure_session_secret_change_me","cookie_secure":false,"storage":"cookie"}
-    
+
     volumes:
       - ./kong.yaml:/usr/local/kong/declarative/kong.yaml
     depends_on:
@@ -80,3 +76,21 @@ services:
       - "8000:8000" # Takes incoming HTTP traffic from Consumers, and forwards it to upstream Services.
       - "8001:8001" # Admin API. Listens for calls from the command line over HTTP.
       - "8002:8002" # Kong Manager (GUI). Listens for HTTP traffic.
+
+  #######################################
+  # deck-sync: Auto sync kong.yaml via decK
+  #######################################
+  deck-sync:
+    image: kong/deck:latest
+    depends_on:
+      - kong
+    networks:
+      - app-network
+    volumes:
+      - ./kong.yaml:/kong.yaml
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Waiting for Kong...' &&
+      sleep 10 &&
+      deck gateway sync /kong.yaml --kong-addr http://kong:8001
+      "
