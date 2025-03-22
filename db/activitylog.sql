@@ -1,3 +1,4 @@
+/*
 DROP DATABASE IF EXISTS ActivityLog;
 
 -- Create the database if it does not exist
@@ -13,6 +14,7 @@ CREATE TABLE ActivityLog (
     EventType VARCHAR(100) NOT NULL, -- e.g., "Order Placed", "Payment Received", "Notification Sent"
     Details TEXT NULL
 );
+
 -- Insert Dummy Data into ActivityLog (No Delivery Events)
 INSERT INTO ActivityLog (UserID, OrderID, EventType, Details)
 VALUES 
@@ -24,3 +26,14 @@ VALUES
 (7, 107, 'Order Placed', 'User 7 placed an order with OrderID 107.'),
 (8, 108, 'Payment Received', 'Payment confirmed for OrderID 108.'),
 (10, 110, 'Order Placed', 'User 10 placed an order with OrderID 110.');
+*/
+
+DROP DATABASE IF EXISTS ActivityLog;
+CREATE DATABASE ActivityLog;
+USE ActivityLog;
+
+CREATE TABLE ActivityLog (
+    ActivityID INT PRIMARY KEY AUTO_INCREMENT,
+    Activity_Date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    Activity_Description VARCHAR(1000) NOT NULL
+);
