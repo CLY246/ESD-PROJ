@@ -78,99 +78,65 @@
 
 import pika
 from os import environ
-import time
 
 # Default connection settings
-hostname = environ.get('rabbit_host') or 'localhost'  # Default to 'localhost' if no environment variable is set
-port = environ.get('rabbit_port') or 5672  # Default to 5672 if no environment variable is set
+hostname = environ.get('rabbit_host', 'localhost')
+port = int(environ.get('rabbit_port', 5672))  # Explicitly convert to integer
 
-# Connection and channel setup
-connection = None
-channel = None
+def create_connection():
+    return pika.BlockingConnection(
+        pika.ConnectionParameters(
+            host=hostname, port=port,
+            heartbeat=3600, blocked_connection_timeout=3600
+        )
+    )
+
+# Establish connection
+try:
+    connection = create_connection()
+    channel = connection.channel()
+except pika.exceptions.AMQPConnectionError as e:
+    print(f"Failed to connect to RabbitMQ: {e}")
+    exit(1)
+
+# Set up the exchange
 exchangename = "order_topic"
 exchangetype = "topic"
+channel.exchange_declare(exchange=exchangename, exchange_type=exchangetype, durable=True)
 
-def connect():
-    """Establish a connection to RabbitMQ and return the connection and channel objects."""
-    global connection, channel
-    try:
-        connection = pika.BlockingConnection(pika.ConnectionParameters('rabbitmq', 5672, '/', pika.PlainCredentials('guest', 'guest')))
-        channel = connection.channel()
-        print("📡 Connection established successfully.")
-        return connection, channel
-    except Exception as e:
-        print(f"Error connecting to RabbitMQ: {e}")
-        return None, None
-
+# Declare and bind all needed queues
 def setup_queues():
-    """Declare and bind all needed queues."""
-    global channel
     try:
-        # Declare and bind the error queue
-        queue_name = 'error'
-        channel.queue_declare(queue=queue_name, durable=True)
-        channel.queue_bind(exchange=exchangename, queue=queue_name, routing_key='*.error')
+        # Error queue setup
+        channel.queue_declare(queue='error', durable=True)
+        channel.queue_bind(exchange=exchangename, queue='error', routing_key='*.error')
 
-        # Declare and bind the activity_log queue
-        queue_name = 'activity_log'
-        channel.queue_declare(queue=queue_name, durable=True)
-        channel.queue_bind(exchange=exchangename, queue=queue_name, routing_key='#')
+        # Activity_log queue setup
+        channel.queue_declare(queue='activity_log', durable=True)
+        channel.queue_bind(exchange=exchangename, queue='activity_log', routing_key='#')
 
-        # Declare and bind the order_notification queue
-        queue_name = 'order_notification'
-        channel.queue_declare(queue=queue_name, durable=True)
-        channel.queue_bind(exchange=exchangename, queue=queue_name, routing_key='*.order.notification')
+        # Order_notification queue setup
+        channel.queue_declare(queue='order_notification', durable=True)
+        channel.queue_bind(exchange=exchangename, queue='order_notification', routing_key='*.order.notification')
 
-        print("📦 Queues declared and bound successfully.")
     except pika.exceptions.AMQPError as e:
-        print(f"AMQP Error during queue setup: {e}")
+        print(f"Queue setup failed: {e}")
 
-def is_connection_open():
-    """Check if the connection is open and process events."""
-    global connection
-    if connection and connection.is_open:
-        try:
-            connection.process_data_events()  # This is necessary to keep the connection active
-            return True
-        except pika.exceptions.AMQPError as e:
-            print(f"AMQP Error while checking connection status: {e}")
-            return False
-    return False
+setup_queues()
 
+# Check and restore connection if needed
 def check_setup():
-    """Ensure the connection is open, and reconnect if needed."""
     global connection, channel
-    if not is_connection_open():
-        print("🔄 Re-establishing connection to RabbitMQ...")
-        connection, channel = connect()
-        if connection and channel:
-            setup_queues()  # Re-declare the queues if the connection is reset
-        else:
-            print("Unable to reconnect to RabbitMQ, retrying...")
-            time.sleep(5)  # Wait a few seconds before retrying
-            check_setup()  # Recursively retry connection
+    if not is_connection_open(connection):
+        print("Re-establishing connection...")
+        connection = create_connection()
+        channel = connection.channel()
+        channel.exchange_declare(exchange=exchangename, exchange_type=exchangetype, durable=True)
+        setup_queues()  # Ensure queues are re-declared
 
-def close_connection():
-    """Ensure that the connection is closed when no longer needed."""
-    global connection
-    if connection and connection.is_open:
-        connection.close()
-        print("🔒 Connection closed.")
-
-# Main entry point
-if __name__ == "__main__":
+def is_connection_open(conn):
     try:
-        connection, channel = connect()  # Initial connection setup
-        if connection and channel:
-            setup_queues()  # Declare the queues after the connection is established
-        else:
-            print("Initial connection failed. Retrying...")
-            check_setup()  # Retry connection if the initial one failed
-
-        # Keep checking the connection periodically
-        while True:
-            check_setup()  # Ensure the connection stays active
-            time.sleep(10)  # Check the connection every 10 seconds
-
-    finally:
-        close_connection()  # Gracefully close the connection when done
+        conn.process_data_events()
+        return True
+    except pika.exceptions.AMQPError:
+        return False
