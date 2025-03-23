@@ -112,23 +112,29 @@ def add_item_to_cart(cart_id):
 
 @app.route("/group-order/<cart_id>", methods=["GET"])
 def get_cart_items(cart_id):
-    cart_items = CartItem.query.filter_by(Cart_ID=cart_id).all()
+    try:
+        cart_items = CartItem.query.filter_by(Cart_ID=cart_id).all()
+
+        items = [
+            {
+                "ID": item.ID,
+                "Item_ID": item.Item_ID,
+                "User_ID": item.User_ID,
+                "Quantity": item.Quantity,
+                "Added_at": item.Added_at.isoformat() if item.Added_at else None
+            }
+            for item in cart_items
+        ]
+
+        return jsonify({
+            "CartID": cart_id,
+            "Items": items
+        })
+    except Exception as e:
+        # Log the error if needed
+        print(f"Error fetching cart {cart_id}: {str(e)}")
+        return jsonify({"error": "Failed to fetch cart"}), 500
     
-    if not cart_items:
-        return jsonify({"message": "Cart is empty", "cartId": cart_id})
-
-    items = [
-        {
-            "ID": item.ID,
-            "Item_ID": item.Item_ID,
-            "User_ID": item.User_ID,
-            "Quantity": item.Quantity,
-            "Added_at": item.Added_at
-        }
-        for item in cart_items
-    ]
-    return jsonify({"CartID": cart_id, "Items": items})
-
 @app.route("/group-order/<cart_id>/remove-item/<item_id>", methods=["DELETE"])
 def remove_item_from_cart(cart_id, item_id):
     item = CartItem.query.filter_by(Cart_ID=cart_id, ID=item_id).first()

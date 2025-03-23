@@ -137,32 +137,7 @@ export default {
       channel: null,
     };
   },
-  mounted() {
-    this.cartId = this.$route.params.cartId;
-
-    if (!this.cartId) {
-      console.error("cartId not found in route params");
-      return;
-    }
-
-    console.log("cartId:", this.cartId);
-    this.fetchVendorFromCart();
-    this.fetchSharedCart();
-    this.subscribeToCartUpdates();
-  },
-  beforeUnmount() {
-    if (this.channel) {
-      supabase.removeChannel(this.channel);
-    }
-  },
   computed: {
-    totalPrice() {
-      return Array.isArray(this.sharedCart)
-        ? this.sharedCart
-            .reduce((sum, item) => sum + (item.Price * item.Quantity || 0), 0)
-            .toFixed(2)
-        : "0.00";
-    },
     groupedCart() {
       return this.sharedCart.reduce((acc, item) => {
         if (!acc[item.Username]) acc[item.Username] = [];
@@ -170,142 +145,160 @@ export default {
         return acc;
       }, {});
     },
+    totalPrice() {
+      return this.sharedCart
+        .reduce((total, item) => total + item.Price * item.Quantity, 0)
+        .toFixed(2);
+    },
   },
   methods: {
-    subscribeToCartUpdates() {
-      console.log("Subscribing to Supabase realtime for cart:", this.cartId);
+    async fetchSharedCart() {
+      try {
+        const res = await axios.get(
+          `http://localhost:8000/group-order/${this.cartId}`
+        );
+        console.log("Fetched cart data:", res.data);
+
+        const items = res.data.Items || [];
+        console.log("Raw cart items:", items);
+
+        const detailedItems = await Promise.all(
+          items.map(async (item) => {
+            try {
+              const [menuRes, userRes] = await Promise.all([
+                axios.get(`http://localhost:8000/menuitem/${item.Item_ID}`),
+                axios.get(`http://localhost:8000/username/${item.User_ID}`),
+              ]);
+
+              return {
+                ...item,
+                ...menuRes.data,
+                Username: userRes.data.Username || "Unknown",
+              };
+            } catch (error) {
+              console.warn("Failed to enrich item", item, error);
+              return {
+                ...item,
+                ItemName: "Unknown",
+                Price: 0,
+                Username: "Unknown",
+              };
+            }
+          })
+        );
+
+        console.log("Final detailed items:", detailedItems);
+
+        // 🔁 Force Vue reactivity to kick in
+        this.sharedCart = [];
+        this.$nextTick(() => {
+          this.sharedCart = detailedItems;
+        });
+      } catch (err) {
+        console.error("Error fetching shared cart:", err);
+      }
+    },
+
+    async fetchVendorFromCart() {
+      try {
+        const res = await axios.get(
+          `http://localhost:8000/group-order/${this.cartId}/vendor`
+        );
+        const vendorId = res.data.vendorId;
+        this.vendor = res.data;
+
+        const menuRes = await axios.get(
+          `http://localhost:8000/menu/${vendorId}`
+        );
+        this.menuItems = menuRes.data;
+      } catch (err) {
+        console.error("Error fetching vendor or menu:", err);
+      }
+    },
+
+    async addToSharedCart(item) {
+      try {
+        const res = await axios.post(
+          `http://localhost:8000/group-order/${this.cartId}/add-item`,
+          {
+            userId: localStorage.getItem("user_id"),
+            itemId: item.ItemID,
+            quantity: 1,
+          },
+          { headers: { "Content-Type": "application/json" } }
+        );
+        console.log("Item added:", res.data);
+      } catch (err) {
+        console.error("Failed to add item", err);
+      }
+    },
+
+    async removeFromSharedCart(itemId) {
+      try {
+        await axios.delete(
+          `http://localhost:8000/group-order/${this.cartId}/remove-item/${itemId}`
+        );
+        console.log("Item removed");
+      } catch (err) {
+        console.error("Failed to remove item", err);
+      }
+    },
+
+    subscribeToRealtime() {
       this.channel = supabase
-        .channel("cart-realtime")
+        .channel("shared-cart-updates")
         .on(
           "postgres_changes",
           {
             event: "*",
             schema: "public",
             table: "cart_items",
-            filter: `Cart_ID=eq.${this.cartId}`,
           },
           async (payload) => {
-            console.log("Realtime update received:", payload);
-            await this.fetchSharedCart();
+            console.log("Event type:", payload.eventType);
+            console.log(payload);
+
+            // For DELETE events, we can't get the cartId from payload
+            // So we'll refresh the cart regardless for DELETE events
+            if (payload.eventType === "DELETE") {
+              console.log("Item deleted, refreshing cart");
+              try {
+                await this.fetchSharedCart();
+              } catch (e) {
+                console.error("Error during fetchSharedCart in Realtime:", e);
+              }
+              return;
+            }
+
+            // For other events, check if it's for our cart
+            const cartId = payload.new?.Cart_ID;
+            console.log("Resolved Cart ID:", cartId);
+            console.log("Expected cartId:", this.cartId);
+
+            if (cartId === this.cartId) {
+              console.log("Realtime update received for this cart");
+              try {
+                await this.fetchSharedCart();
+              } catch (e) {
+                console.error("Error during fetchSharedCart in Realtime:", e);
+              }
+            }
           }
         )
-        .subscribe();
-    },
-
-    async fetchSharedCart() {
-      if (!this.cartId) return;
-      try {
-        const { data } = await axios.get(
-          `http://localhost:8000/group-order/${this.cartId}`
-        );
-
-        let cartItems = data.Items || [];
-        console.log("Cart Items:", cartItems);
-
-        const itemPromises = cartItems.map(async (item) => {
-          try {
-            const [menuRes, userRes] = await Promise.all([
-              axios.get(`http://localhost:8000/menuitem/${item.Item_ID}`),
-              axios.get(`http://localhost:8000/username/${item.User_ID}`),
-            ]);
-            return {
-              ...item,
-              ...menuRes.data,
-              Username: userRes.data.Username || "Unknown User",
-            };
-          } catch (err) {
-            console.error("Failed to fetch item/user details:", err);
-            return {
-              ...item,
-              ItemName: "Unknown Item",
-              Price: 0.0,
-              ImageURL: "",
-              Username: "Unknown User",
-            };
-          }
+        .subscribe((status) => {
+          console.log("Realtime subscription status:", status);
         });
-
-        this.sharedCart = await Promise.all(itemPromises);
-      } catch (err) {
-        console.error("Error fetching cart:", err);
-      }
     },
-
-    async addToSharedCart(item) {
-      if (!this.cartId || !item?.ItemID) {
-        console.warn("Missing cartId or itemId");
-        return;
-      }
-
-      try {
-        const response = await axios.post(
-          `http://localhost:8000/group-order/${this.cartId}/add-item`,
-          {
-            userId: localStorage.getItem("user_id"),
-            itemId: item.ItemID,
-            quantity: 1,
-          }
-        );
-        console.log("Item added:", response.data);
-
-        await this.fetchSharedCart();
-      } catch (error) {
-        this.logAxiosError(error, "adding item");
-      }
-    },
-    async removeFromSharedCart(itemId) {
-      if (!this.cartId || !itemId) {
-        console.warn("Missing cartId or itemId");
-        return;
-      }
-
-      try {
-        const response = await axios.delete(
-          `http://localhost:8000/group-order/${this.cartId}/remove-item/${itemId}`
-        );
-        console.log("Item removed:", response.data);
-
-        await this.fetchSharedCart();
-      } catch (error) {
-        this.logAxiosError(error, "removing item");
-      }
-    },
-
-    async fetchVendorFromCart() {
-      try {
-        const response = await axios.get(
-          `http://localhost:8000/group-order/${this.cartId}/vendor`
-        );
-        const vendorId = response.data.vendorId;
-        console.log("Vendor ID from cart:", vendorId);
-        await this.fetchMenuItems(vendorId);
-      } catch (error) {
-        this.logAxiosError(error, "fetching vendor");
-      }
-    },
-
-    async fetchMenuItems(vendorId) {
-      try {
-        const response = await axios.get(
-          `http://localhost:8000/menu/${vendorId}`
-        );
-        this.menuItems = response.data;
-      } catch (error) {
-        this.logAxiosError(error, "fetching menu items");
-      }
-    },
-
-    logAxiosError(error, context) {
-      if (error.response) {
-        console.error(`Error ${context}:`);
-        console.log("URL:", error.config.url);
-        console.log("Method:", error.config.method);
-        console.log("Status:", error.response.status);
-        console.log("Data:", error.response.data);
-      } else {
-        console.error("Network error or unknown:", error.message);
-      }
-    },
+  },
+  async mounted() {
+    this.cartId = this.$route.params.cartId;
+    console.log("cartId:", this.cartId);
+    await this.fetchVendorFromCart();
+    await this.fetchSharedCart();
+    this.subscribeToRealtime();
+  },
+  beforeUnmount() {
+    if (this.channel) supabase.removeChannel(this.channel);
   },
 };
 </script>
