@@ -176,7 +176,7 @@ const fetchMenuItems = async () => {
 const startGroupOrder = async () => {
   try {
     const userId = localStorage.getItem("user_id");
-    const response = await axios.post("http://localhost:5012/group-order/invite", {
+    const response = await axios.post("http://localhost:8000/group-order/invite", {
       vendorId: vendorId,
       userId: userId
     });

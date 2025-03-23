@@ -4,10 +4,25 @@ _transform: true
 services:
   - name: user-service
     url: http://user-service:5000
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - http://localhost:8080
+          methods:
+            - GET
+            - POST
+            - DELETE
+            - OPTIONS
+          headers:
+            - Content-Type
+            - Authorization
+          credentials: true
+
     routes:
       - name: register
         paths: ["/register"]
-        methods: ["POST"]
+        methods: ["POST", "OPTIONS"]
         strip_path: false
 
       - name: get-username
@@ -18,27 +33,42 @@ services:
 
       - name: login
         paths: ["/login"]
-        methods: ["POST"]
+        methods: ["POST", "OPTIONS"]
         strip_path: false
 
   - name: group-order-service
     url: http://group-order-service:5000
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - http://localhost:8080
+          methods:
+            - GET
+            - POST
+            - DELETE
+            - OPTIONS
+          headers:
+            - Content-Type
+            - Authorization
+          credentials: true
+
     routes:
       - name: add-sharedcart-item
-        paths: ["~/group-order/([a-zA-Z0-9\\-]+)/add"]
-        methods: ["POST"]
+        paths: ["~/group-order/([a-zA-Z0-9\\-]+)/add-item"]
+        methods: ["POST", "OPTIONS"]
         strip_path: false
         regex_priority: 1
 
       - name: get-sharedcart-items
-        paths: ["~/group-order/([a-zA-Z0-9\\-]+)/items"]
+        paths: ["~/group-order/([a-zA-Z0-9\\-]+)"]
         methods: ["GET"]
         strip_path: false
         regex_priority: 1
 
       - name: create-sharedcart
         paths: ["/group-order/invite"]
-        methods: ["POST"]
+        methods: ["POST", "OPTIONS"]
         strip_path: false
 
       - name: get-sharedcart-vendor
@@ -48,16 +78,37 @@ services:
         regex_priority: 1
 
       - name: remove-sharedcart-item
-        paths: ["~/group-order/([a-zA-Z0-9\\-]+)/remove"]
-        methods: ["DELETE"]
+        paths: ["~/group-order/([a-zA-Z0-9\\-]+)/remove-item/([0-9]+)"]
+        methods: ["DELETE", "OPTIONS"]
         strip_path: false
         regex_priority: 1
 
   - name: vendor-service
     url: http://vendor-service:5000
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - http://localhost:8080
+          methods:
+            - GET
+            - POST
+            - DELETE
+            - OPTIONS
+          headers:
+            - Content-Type
+            - Authorization
+          credentials: true
+
     routes:
-      - name: get_menuitems
+      - name: get_menu
         paths: ["~/menu/([a-zA-Z0-9\\-]+)"]
+        methods: ["GET"]
+        strip_path: false
+        regex_priority: 1
+
+      - name: get_sharedcard_menuitems
+        paths: ["~/menuitem/([a-zA-Z0-9\\-]+)"]
         methods: ["GET"]
         strip_path: false
         regex_priority: 1
@@ -72,3 +123,5 @@ services:
         methods: ["GET"]
         strip_path: false
         regex_priority: 1
+
+

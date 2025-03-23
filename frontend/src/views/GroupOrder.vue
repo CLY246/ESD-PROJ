@@ -119,23 +119,13 @@
 </template>
 
 <script>
-import { io } from "socket.io-client";
 import axios from "axios";
+import { createClient } from "@supabase/supabase-js";
 
-
-const socket = io("http://localhost:5012", {
-  transports: ["websocket", "polling"],
-  reconnection: true,
-  reconnectionAttempts: 5,
-});
-
-socket.on("connect", () => {
-  console.log("Connected to WebSocket!");
-});
-
-socket.on("disconnect", () => {
-  console.log("WebSocket Disconnected");
-});
+const supabase = createClient(
+  "https://ioskwqelrdcangizpzij.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlvc2t3cWVscmRjYW5naXpwemlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIwNTc0NTksImV4cCI6MjA1NzYzMzQ1OX0.Kpt-FzHu9yA7ilcCmSRYtPcHtjnei276B-uIZx_4cxc"
+);
 
 export default {
   data() {
@@ -144,50 +134,25 @@ export default {
       vendor: {},
       menuItems: {},
       sharedCart: [],
+      channel: null,
     };
   },
   mounted() {
     this.cartId = this.$route.params.cartId;
+
+    if (!this.cartId) {
+      console.error("cartId not found in route params");
+      return;
+    }
+
+    console.log("cartId:", this.cartId);
     this.fetchVendorFromCart();
     this.fetchSharedCart();
-
-    socket.emit("join_cart", { cartId: this.cartId });
-
-    socket.on("cart_updated", async (data) => {
-      console.log("WebSocket cart updated:", data);
-
-      if (data.cartId === this.cartId) {
-        console.log("Fetching updated cart details...", data.items);
-        await this.fetchSharedCart();
-        const menuPromises = data.items.map(async (item) => {
-          try {
-            const menuResponse = await axios.get(
-              `http://localhost:5002/menuitem/${item.Item_ID}`
-            );
-            // Fetch user details (username)
-            const userResponse = await axios.get(
-              `http://localhost:5001/username/${item.User_ID}`
-            );
-            const userData = userResponse.data;
-            return { ...item, ...menuResponse.data, Username: userData.Username || "Unknown User" };
-          } catch (error) {
-            console.error("Error fetching menu details:", error);
-            return {
-              ...item,
-              ItemName: "Unknown Item",
-              Price: 0.0,
-              ImageURL: "",
-            };
-          }
-        });
-
-        this.sharedCart = await Promise.all(menuPromises);
-      }
-    });
+    this.subscribeToCartUpdates();
   },
   beforeUnmount() {
-    if (this.socket) {
-      this.socket.disconnect();
+    if (this.channel) {
+      supabase.removeChannel(this.channel);
     }
   },
   computed: {
@@ -200,98 +165,145 @@ export default {
     },
     groupedCart() {
       return this.sharedCart.reduce((acc, item) => {
-        if (!acc[item.Username]) {
-          acc[item.Username] = [];
-        }
+        if (!acc[item.Username]) acc[item.Username] = [];
         acc[item.Username].push(item);
         return acc;
       }, {});
     },
   },
   methods: {
+    subscribeToCartUpdates() {
+      console.log("Subscribing to Supabase realtime for cart:", this.cartId);
+      this.channel = supabase
+        .channel("cart-realtime")
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "cart_items",
+            filter: `Cart_ID=eq.${this.cartId}`,
+          },
+          async (payload) => {
+            console.log("Realtime update received:", payload);
+            await this.fetchSharedCart();
+          }
+        )
+        .subscribe();
+    },
+
     async fetchSharedCart() {
+      if (!this.cartId) return;
       try {
-        // Fetch cart items from group-order API
-        const response = await axios.get(
-          `http://localhost:5012/group-order/${this.cartId}`
+        const { data } = await axios.get(
+          `http://localhost:8000/group-order/${this.cartId}`
         );
 
-        // Store initial cart items
-        let cartItems = response.data.Items || [];
+        let cartItems = data.Items || [];
+        console.log("Cart Items:", cartItems);
 
-        // Fetch menu and user details for each item
         const itemPromises = cartItems.map(async (item) => {
           try {
-            // Fetch menu item details
-            const menuResponse = await axios.get(
-              `http://localhost:5002/menuitem/${item.Item_ID}`
-            );
-            const menuData = menuResponse.data;
-
-            // Fetch user details (username)
-            const userResponse = await axios.get(
-              `http://localhost:5001/username/${item.User_ID}`
-            );
-            const userData = userResponse.data;
-
+            const [menuRes, userRes] = await Promise.all([
+              axios.get(`http://localhost:8000/menuitem/${item.Item_ID}`),
+              axios.get(`http://localhost:8000/username/${item.User_ID}`),
+            ]);
             return {
               ...item,
-              ...menuData, // Merge menu details
-              Username: userData.Username || "Unknown User", // Add username
+              ...menuRes.data,
+              Username: userRes.data.Username || "Unknown User",
             };
-          } catch (error) {
-            console.error("Error fetching details:", error);
+          } catch (err) {
+            console.error("Failed to fetch item/user details:", err);
             return {
               ...item,
               ItemName: "Unknown Item",
               Price: 0.0,
               ImageURL: "",
-              Username: "Unknown User", // Default if user fetch fails
+              Username: "Unknown User",
             };
           }
         });
 
-        // Wait for all requests to complete
         this.sharedCart = await Promise.all(itemPromises);
-      } catch (error) {
-        console.error("Error fetching cart:", error);
+      } catch (err) {
+        console.error("Error fetching cart:", err);
       }
     },
+
     async addToSharedCart(item) {
-      await axios.post(
-        `http://localhost:5012/group-order/${this.cartId}/add-item`,
-        {
-          userId: localStorage.getItem("user_id"),
-          itemId: item.ItemID,
-          quantity: 1,
-        }
-      );
+      if (!this.cartId || !item?.ItemID) {
+        console.warn("Missing cartId or itemId");
+        return;
+      }
+
+      try {
+        const response = await axios.post(
+          `http://localhost:8000/group-order/${this.cartId}/add-item`,
+          {
+            userId: localStorage.getItem("user_id"),
+            itemId: item.ItemID,
+            quantity: 1,
+          }
+        );
+        console.log("Item added:", response.data);
+
+        await this.fetchSharedCart();
+      } catch (error) {
+        this.logAxiosError(error, "adding item");
+      }
     },
     async removeFromSharedCart(itemId) {
-      await axios.delete(
-        `http://localhost:5012/group-order/${this.cartId}/remove-item/${itemId}`
-      );
+      if (!this.cartId || !itemId) {
+        console.warn("Missing cartId or itemId");
+        return;
+      }
+
+      try {
+        const response = await axios.delete(
+          `http://localhost:8000/group-order/${this.cartId}/remove-item/${itemId}`
+        );
+        console.log("Item removed:", response.data);
+
+        await this.fetchSharedCart();
+      } catch (error) {
+        this.logAxiosError(error, "removing item");
+      }
     },
+
     async fetchVendorFromCart() {
       try {
         const response = await axios.get(
-          `http://localhost:5012/group-order/${this.cartId}/vendor`
+          `http://localhost:8000/group-order/${this.cartId}/vendor`
         );
         const vendorId = response.data.vendorId;
-
+        console.log("Vendor ID from cart:", vendorId);
         await this.fetchMenuItems(vendorId);
       } catch (error) {
-        console.error("Error fetching vendor from cart:", error);
+        this.logAxiosError(error, "fetching vendor");
       }
     },
+
     async fetchMenuItems(vendorId) {
       try {
         const response = await axios.get(
-          `http://localhost:5002/menu/${vendorId}`
+          `http://localhost:8000/menu/${vendorId}`
         );
         this.menuItems = response.data;
       } catch (error) {
-        console.error("Error fetching menu items:", error);
+        this.logAxiosError(error, "fetching menu items");
+      }
+    },
+
+    logAxiosError(error, context) {
+      if (error.response) {
+        console.error(`Error ${context}:`);
+        console.log("URL:", error.config.url);
+        console.log("Method:", error.config.method);
+        console.log("Status:", error.response.status);
+        console.log("Data:", error.response.data);
+      } else {
+        console.error("Network error or unknown:", error.message);
       }
     },
   },

@@ -17,7 +17,6 @@ logging.basicConfig(level=logging.DEBUG)
 from datetime import datetime
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
 
 CORS(app)  
@@ -48,15 +47,6 @@ class CartItem(db.Model):
 
 with app.app_context():
     db.create_all()
-
-
-@socketio.on("join_cart")
-def join_cart(data):
-    cart_id = str(data.get("cartId"))
-    join_room(cart_id)
-    logging.info(f"User joined room {cart_id}")
-    emit("cart_message", {"message": f"User joined cart {cart_id}"}, room=cart_id)
-
 
 
 @app.route("/group-order/invite", methods=["POST"])
@@ -118,16 +108,6 @@ def add_item_to_cart(cart_id):
     db.session.add(new_item)
     db.session.commit()
 
-    cart_items = CartItem.query.filter_by(Cart_ID=cart_id).all()
-    updated_cart = [
-        {
-            "ID": str(item.ID),"Item_ID": str(item.Item_ID),"Quantity": item.Quantity,"User_ID": str(item.User_ID)
-        }
-        for item in cart_items
-    ]
-    logging.info("Emitting cart_updated event:", json.dumps({"cartId": cart_id, "items": updated_cart}, indent=2))
-    socketio.emit("cart_updated", {"cartId": cart_id, "items": updated_cart}, room=str(cart_id), namespace="/")
-
     return jsonify({"message": "Item added successfully", "cartId": cart_id})
 
 @app.route("/group-order/<cart_id>", methods=["GET"])
@@ -152,21 +132,11 @@ def get_cart_items(cart_id):
 @app.route("/group-order/<cart_id>/remove-item/<item_id>", methods=["DELETE"])
 def remove_item_from_cart(cart_id, item_id):
     item = CartItem.query.filter_by(Cart_ID=cart_id, ID=item_id).first()
-
     if not item:
         return jsonify({"error": "Item not found in cart"}), 404
 
     db.session.delete(item)
     db.session.commit()
-
-    cart_items = CartItem.query.filter_by(Cart_ID=cart_id).all()
-    updated_cart = [
-        { "ID": str(item.ID),"Item_ID": str(item.Item_ID),"Quantity": item.Quantity,"User_ID": str(item.User_ID)}
-        for item in cart_items
-    ]
-    logging.info("Emitting cart_updated event:", json.dumps({"cartId": cart_id, "items": updated_cart}, indent=2))
-    socketio.emit("cart_updated", {"cartId": cart_id, "items": updated_cart}, room=str(cart_id),namespace="/")
-
     return jsonify({"message": "Item removed successfully", "cartId": cart_id})
 
 
@@ -177,18 +147,6 @@ def clear_cart(cart_id):
     return jsonify({"message": "Cart cleared successfully", "cartId": cart_id})
 
 
-@socketio.on("connect")
-def handle_connect():
-    logging.info("WebSocket Connected!")
-    emit("message", {"status": "connected"}, broadcast=True)
-
-@socketio.on("disconnect")
-def handle_disconnect():
-    logging.info("WebSocket Disconnected")
-
-gunicorn_app = app
-if __name__ != "__main__":
-    gunicorn_app = app  # Gunicorn looks for `grouporder:gunicorn_app`
 
 if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", port=5000, allow_unsafe_werkzeug=True)
+    app.run(host="0.0.0.0", port=5000)
