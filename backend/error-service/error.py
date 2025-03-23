@@ -73,30 +73,24 @@
 #     app.run(host='0.0.0.0', port=5000, debug=True)
 
 
-
-
-
-
 import os
 import json
-import pika
+import threading
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from datetime import datetime
-import threading
 from rabbitmq import amqp_setup
-
 
 # Flask App Setup
 app = Flask(__name__)
 CORS(app)
 
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:root@host.docker.internal:3306/error"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:root@host.docker.internal:3306/ErrorLog"
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
-
 db = SQLAlchemy(app)
 
+
+# DB Model
 class ErrorLog(db.Model):
     __tablename__ = 'ErrorLog'
     ErrorID = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -116,10 +110,12 @@ class ErrorLog(db.Model):
             "Severity": self.Severity
         }
 
+# Health endpoint
 @app.route('/api/health')
 def health_check():
     return jsonify({"message": "Error API is running!"})
 
+# Logging API
 @app.route("/errors", methods=["POST"])
 def log_error():
     data = request.json
@@ -155,19 +151,15 @@ def get_error_by_id(error_id):
         return jsonify({"message": "Error not found"}), 404
     return jsonify(error.json())
 
-# AMQP Consumer Setup
-RABBIT_HOST = "rabbitmq"
-RABBIT_PORT = 5672
-EXCHANGE_NAME = "order_topic"
-QUEUE_NAME = "Error"
+# --- RabbitMQ Consumer Setup ---
+QUEUE_NAME = "error"
 
 def callback(channel, method, properties, body):
-    """ Callback function to process incoming messages from RabbitMQ """
+    """Handles incoming error messages from RabbitMQ"""
     try:
         error_data = json.loads(body)
         print(f"📩 Received Error Message: {error_data}")
 
-        # Save to database
         new_error = ErrorLog(
             ServiceName=error_data.get("ServiceName", "Unknown"),
             OrderID=error_data.get("OrderID"),
@@ -184,25 +176,22 @@ def callback(channel, method, properties, body):
         print(f"Message received: {body}")
 
 def consume_errors():
-    """ AMQP Consumer to continuously listen for error messages """
+    """Starts consuming from RabbitMQ error queue"""
     try:
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host=RABBIT_HOST, port=RABBIT_PORT)
-        )
-        channel = connection.channel()
+        connection, channel = amqp_setup.connect()
+
+        # Declare & bind only this service's queue
         channel.queue_declare(queue=QUEUE_NAME, durable=True)
+        channel.queue_bind(exchange=amqp_setup.EXCHANGE_NAME, queue=QUEUE_NAME, routing_key="*.error")
 
         print(f"✅ Connected to RabbitMQ, listening on queue '{QUEUE_NAME}'...")
         channel.basic_consume(queue=QUEUE_NAME, on_message_callback=callback, auto_ack=True)
-
         channel.start_consuming()
     except Exception as e:
         print(f"❌ Unable to connect to RabbitMQ: {e}")
 
+# Start consumer thread + Flask app
 if __name__ == '__main__':
-    # Start the AMQP Consumer in a separate thread
     threading.Thread(target=consume_errors, daemon=True).start()
-
-    # Start Flask API
     print("🚀 Starting Flask Error Service...")
     app.run(host='0.0.0.0', port=5000, debug=True)

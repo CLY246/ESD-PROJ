@@ -78,69 +78,62 @@
 
 import os
 import json
+import time
 import pika
 import threading
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from rabbitmq import amqp_setup  # ✅ Use shared setup logic
 
 # Flask App Setup
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("dbURL") or "mysql+mysqlconnector://root:root@host.docker.internal:3306/activitylog"
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("dbURL") or \
+    "mysql+mysqlconnector://root:root@host.docker.internal:3306/activityLog"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
-
 db = SQLAlchemy(app)
 
+# ActivityLog Table
 class Activity(db.Model):
-    __tablename__ = 'activity_log'
+    __tablename__ = 'ActivityLog'  # Matches SQL exactly (case-sensitive)
 
-    activity_id = db.Column(db.Integer, primary_key=True)
-    activity_description = db.Column(db.String(1000), nullable=False)
+    ActivityID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    Activity_Date = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp())
+    Activity_Description = db.Column(db.String(1000), nullable=False)
 
-    def __init__(self, activity_description):
-        self.activity_description = activity_description
+    def __init__(self, Activity_Description):
+        self.Activity_Description = Activity_Description
 
     def json(self):
-        return {"activity_description": self.activity_description}
+        return {
+            "ActivityID": self.ActivityID,
+            "Activity_Date": self.Activity_Date,
+            "Activity_Description": self.Activity_Description
+        }
 
+
+# Health check endpoint
 @app.route('/api/health')
 def health_check():
     return jsonify({"message": "Activity Log API is running!"})
 
-# RabbitMQ Connection Setup
-RABBIT_HOST = os.environ.get('rabbit_host', 'localhost')
-RABBIT_PORT = int(os.environ.get('rabbit_port', 5672))
-EXCHANGE_NAME = "order_topic"
-EXCHANGE_TYPE = "topic"
+# RabbitMQ Constants
 QUEUE_NAME = "activity_log"
 
-def create_connection():
-    return pika.BlockingConnection(
-        pika.ConnectionParameters(host=RABBIT_HOST, port=RABBIT_PORT,
-                                  heartbeat=3600, blocked_connection_timeout=3600)
-    )
-
-try:
-    connection = create_connection()
-    channel = connection.channel()
-    channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type=EXCHANGE_TYPE, durable=True)
-    channel.queue_declare(queue=QUEUE_NAME, durable=True)
-    channel.queue_bind(exchange=EXCHANGE_NAME, queue=QUEUE_NAME, routing_key='#')
-except pika.exceptions.AMQPConnectionError as e:
-    print(f"Failed to connect to RabbitMQ: {e}")
-    exit(1)
+# Connect to RabbitMQ once
+connection, channel = amqp_setup.connect()
 
 def create_activity_log(activity_description):
     """Creates an activity log entry and commits to the database."""
     with app.app_context():
         try:
-            activity = Activity(activity_description=activity_description)
+            activity = Activity(Activity_Description=activity_description)
             db.session.add(activity)
             db.session.commit()
-            print(f"Logged activity: {activity_description}")
+            print(f"📝 Logged activity: {activity_description}")
         except Exception as e:
-            print(f"Error logging activity: {str(e)}")
+            print(f"❌ Error logging activity: {str(e)}")
 
 def callback(channel, method, properties, body):
     """Handles incoming messages from RabbitMQ."""
@@ -148,22 +141,25 @@ def callback(channel, method, properties, body):
         activity_description = body.decode("utf-8")
         create_activity_log(activity_description)
     except Exception as e:
-        print(f"Failed to process message: {str(e)}")
+        print(f"❌ Failed to process message: {str(e)}")
 
 def receive_order_log():
     """Sets up RabbitMQ listener in a separate thread."""
     try:
+        # Make sure queue is declared and bound (optional if already done in amqp_setup)
+        channel.queue_declare(queue=QUEUE_NAME, durable=True)
+        channel.queue_bind(exchange=amqp_setup.EXCHANGE_NAME, queue=QUEUE_NAME, routing_key="#")
+
         channel.basic_consume(queue=QUEUE_NAME, on_message_callback=callback, auto_ack=True)
-        print("Waiting for messages... [Activity Log Service]")
+        print(f"📡 Listening for messages on queue '{QUEUE_NAME}'... [Activity Log Service]")
         channel.start_consuming()
     except Exception as e:
-        print(f"RabbitMQ Consumer Error: {str(e)}")
+        print(f"❌ RabbitMQ Consumer Error: {str(e)}")
 
-# Run RabbitMQ consumer in a separate thread
+# Start the consumer thread
 threading.Thread(target=receive_order_log, daemon=True).start()
 
-# Start Flask app
+# Run Flask app
 if __name__ == "__main__":
-    print("Starting Flask app for Activity Log Service...")
-    app.run(host="0.0.0.0", port=5000, debug=False)  # Set debug=False for production
-
+    print("🚀 Starting Flask app for Activity Log Service...")
+    app.run(host="0.0.0.0", port=5000, debug=False)

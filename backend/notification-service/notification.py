@@ -240,19 +240,17 @@ from flask_cors import CORS
 from datetime import datetime
 from rabbitmq import amqp_setup
 
-
 # Flask App Setup
 app = Flask(__name__)
 CORS(app)
 
-
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+mysqlconnector://root:root@host.docker.internal:3306/notification"
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
-
 db = SQLAlchemy(app)
 
+# Database Model
 class Notification(db.Model):
-    __tablename__ = 'Notifications'
+    __tablename__ = 'notifications'  # 🔁 lowercase to match SQL
 
     NotificationID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     UserID = db.Column(db.Integer, nullable=False)
@@ -273,10 +271,12 @@ class Notification(db.Model):
             "IsRead": self.IsRead
         }
 
+# Health endpoint
 @app.route('/api/health')
 def health_check():
     return jsonify({"message": "Notification API is running!"})
 
+# REST endpoints
 @app.route("/notifications", methods=["POST"])
 def create_notification():
     data = request.json
@@ -317,19 +317,14 @@ def mark_notification_as_read(notification_id):
     db.session.commit()
     return jsonify({"message": "Notification marked as read"})
 
-# AMQP Consumer Setup
-RABBIT_HOST = "rabbitmq"
-RABBIT_PORT = 5672
-EXCHANGE_NAME = "order_topic"
-QUEUE_NAME = "Notification"
+# RabbitMQ Consumer Setup
+QUEUE_NAME = "order_notification"
 
 def callback(channel, method, properties, body):
-    """ Callback function to process incoming messages from RabbitMQ """
     try:
         notification_data = json.loads(body)
         print(f"📩 Received Notification Message: {notification_data}")
 
-        # Save to database
         new_notification = Notification(
             UserID=notification_data.get("UserID"),
             OrderID=notification_data.get("OrderID"),
@@ -346,25 +341,22 @@ def callback(channel, method, properties, body):
         print(f"Message received: {body}")
 
 def consume_notifications():
-    """ AMQP Consumer to continuously listen for notifications """
     try:
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host=RABBIT_HOST, port=RABBIT_PORT)
-        )
-        channel = connection.channel()
+        connection, channel = amqp_setup.connect()
+
+        # 👇 This service should only declare its own queue
         channel.queue_declare(queue=QUEUE_NAME, durable=True)
+        channel.queue_bind(exchange=amqp_setup.EXCHANGE_NAME, queue=QUEUE_NAME, routing_key="*.order.notification")
 
         print(f"✅ Connected to RabbitMQ, listening on queue '{QUEUE_NAME}'...")
         channel.basic_consume(queue=QUEUE_NAME, on_message_callback=callback, auto_ack=True)
-
         channel.start_consuming()
+
     except Exception as e:
         print(f"❌ Unable to connect to RabbitMQ: {e}")
 
+# Start consumer thread
 if __name__ == '__main__':
-    # Start the AMQP Consumer in a separate thread
     threading.Thread(target=consume_notifications, daemon=True).start()
-
-    # Start Flask API
     print("🚀 Starting Flask Notification Service...")
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -111,11 +111,259 @@
 #   app-network:
 
 # version: '3'
-version: "3.8"
+# version: "3.8"
+
+# volumes:
+#   postgres-data:
+#   rabbitmq_data:
+
+# networks:
+#   app-network:
+#     driver: bridge
+
+# services:
+#   rabbitmq:
+#     image: rabbitmq:3-management
+#     hostname: rabbitmq
+#     restart: always
+#     networks:
+#       - app-network
+#     ports:
+#       - "5673:5672"
+#       - "15673:15672"
+#     volumes:
+#       - rabbitmq_data:/var/lib/rabbitmq
+#     healthcheck:
+#       test: [ "CMD", "rabbitmqctl", "status" ]
+#       interval: 30s
+#       retries: 3
+#       start_period: 10s
+#       timeout: 10s
+
+#   user-service:
+#     build: ./backend/user-service
+#     ports:
+#       - "5001:5000"
+#     environment:
+#       FLASK_APP: user.py
+#       FLASK_ENV: development
+#       JWT_SECRET_KEY: 48tpzfa+Uu1RH3Sy4wR4UjdK+MNjTuYqN6gaMSnX5/KpLoQ9/ijwrcaJ37b9yMO2e+4j0LW850H1xGJAic0MHQ==
+#       SUPABASE_URL: https://zfuesqdkqrlbnmsfichi.supabase.co
+#       SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmdWVzcWRrcXJsYm5tc2ZpY2hpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MTkyNTY1MSwiZXhwIjoyMDU3NTAxNjUxfQ.FTpBEbaEUSl10KBkjFYlh_SXDDsl0YP37Li5-FMIB0s
+#     networks:
+#       - app-network
+
+#   vendor-service:
+#     build: ./backend/vendor-service
+#     working_dir: /app
+#     ports:
+#       - "5002:5000"
+#     environment:
+#       FLASK_APP: vendor.py
+#       FLASK_ENV: production
+#       DATABASE_URL: postgresql://postgres.idoxtwehkovtpgpskzhh:postgres@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres
+#     depends_on:
+#       - db
+#     networks:
+#       - app-network
+#       - default
+#     restart: always
+
+#   group-order-service:
+#     build: ./backend/group-order-service
+#     working_dir: /app
+#     ports:
+#       - "5012:5000"
+#     environment:
+#       FLASK_APP: grouporder.py
+#       FLASK_ENV: production
+#       DATABASE_URL: postgresql://postgres.ioskwqelrdcangizpzij:postgres@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres
+#     depends_on:
+#       - db
+#     networks:
+#       - app-network
+#       - default
+#     restart: always
+
+#   ordermanagement-service:
+#     build: ./backend/ordermanagement-service # Corrected path
+#     ports:
+#       - "5003:5000"
+#     environment:
+#       SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/ordermanagement"
+#     networks:
+#       - app-network
+#     restart: always
+
+#   queuemanagement-service:
+#     build: ./backend/queuemanagement-service
+#     ports:
+#       - "5004:5000"
+#     environment:
+#       SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/queuemanagement"
+#     networks:
+#       - app-network
+#     restart: always
+
+#   payment-service:
+#     build: ./backend/payment-service
+#     ports:
+#       - "5005:5000"
+#     environment:
+#       SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/payment"
+#     networks:
+#       - app-network
+#     restart: always
+
+#   notification-service:
+#     build: ./backend/notification-service
+#     ports:
+#       - "5006:5000"
+#     volumes:
+#       - ./backend/rabbitmq:/app/rabbitmq
+#     command:
+#       [
+#         "sh",
+#         "-c",
+#         "python /app/rabbitmq/amqp_setup.py && python notification.py"
+#       ]
+#     environment:
+#       SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/notification"
+#     networks:
+#       - app-network
+#     depends_on:
+#       rabbitmq:
+#         condition: service_healthy
+#       placeanorder-service:
+#         condition: service_started
+#     restart: always
+
+#   error-service:
+#     build: ./backend/error-service
+#     ports:
+#       - "5007:5000"
+#     volumes:
+#       - ./backend/rabbitmq:/app/rabbitmq
+#     command:
+#       [
+#         "sh",
+#         "-c",
+#         "python /app/rabbitmq/amqp_setup.py && python error.py"
+#       ]
+#     environment:
+#       SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/error"
+#     networks:
+#       - app-network
+#     depends_on:
+#       rabbitmq:
+#         condition: service_healthy
+#       placeanorder-service:
+#         condition: service_started
+#     restart: always
+
+#   activitylog-service:
+#     build: ./backend/activitylog-service
+#     ports:
+#       - "5008:5000"
+#     volumes:
+#       - ./backend/rabbitmq:/app/rabbitmq
+#     command:
+#       [
+#         "sh",
+#         "-c",
+#         "python /app/rabbitmq/amqp_setup.py && python activitylog.py"
+#       ]
+#     environment:
+#       dbURL: "mysql+mysqlconnector://root:root@host.docker.internal:3306/activitylog"
+#       rabbit_host: rabbitmq
+#       rabbit_port: 5673
+#       PYTHONUNBUFFERED: 1
+#     networks:
+#       - app-network
+#     depends_on:
+#       rabbitmq:
+#         condition: service_healthy
+#       placeanorder-service:
+#         condition: service_started
+#     restart: always
+
+#   splitpayment-service:
+#     build: ./backend/splitpayment-service
+#     ports:
+#       - "5009:5000"
+#     environment:
+#       SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/splitpayment"
+#     networks:
+#       - app-network
+#     restart: always
+
+#   quickreorder-service:
+#     build: ./backend/quickreorder-service
+#     ports:
+#       - "5010:5000"
+#     environment:
+#       SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/quickreorder"
+#     networks:
+#       - app-network
+#     restart: always
+
+#   placeanorder-service:
+#     build: ./backend/placeanorder-service
+#     ports:
+#       - "5011:5000"
+#     volumes:
+#       - ./backend/rabbitmq:/app/rabbitmq
+#     command:
+#       [
+#         "sh",
+#         "-c",
+#         "python /app/rabbitmq/amqp_setup.py && python placeanorder.py"
+#       ]
+#     environment:
+#       ORDER_MANAGEMENT_URL: "http://ordermanagement-service:5003/orders"
+#       AMQP_BROKER_URL: "amqp://guest:guest@rabbitmq:5673/"
+#     depends_on:
+#       rabbitmq:
+#         condition: service_healthy
+#       ordermanagement-service:
+#         condition: service_started
+#     networks:
+#       - app-network
+#     restart: always
+
+#   frontend:
+#     build: ./frontend
+#     ports:
+#       - "8080:80" # Vue will be available at http://localhost:8080
+#     depends_on:
+#       - user-service
+#     restart: always
+#     networks:
+#       - app-network
+
+#   db:
+#     image: postgres:14
+#     container_name: postgres-db
+#     restart: always
+#     environment:
+#       POSTGRES_USER: postgres
+#       POSTGRES_PASSWORD: postgres
+#       POSTGRES_DB: postgres
+#     ports:
+#       - "5432:5432"
+#     networks:
+#       - app-network
+#     volumes:
+#       - postgres-data:/var/lib/postgresql/data
+
+# version: '3'
+# version: "3.8"
+
 volumes:
   postgres-data:
   rabbitmq_data:
-  
+
+
 networks:
   app-network:
     driver: bridge
@@ -128,16 +376,16 @@ services:
     networks:
       - app-network
     ports:
-      - "5672:5672"      
+      - "5672:5672"
       - "15672:15672"
-    volumes: 
-      - rabbitmq_data:/var/lib/rabbitmq
+    # volumes:
+    #   - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmqctl", "status"]
-      interval: 30s
-      retries: 3
-      start_period: 10s
-      timeout: 10s
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 5s # was 30s → more frequent checks
+      timeout: 5s
+      retries: 10 # allow retries to give time to fully start
+      start_period: 10s # wait time before first check
 
   user-service:
     build: ./backend/user-service
@@ -189,7 +437,7 @@ services:
     ports:
       - "5003:5000"
     environment:
-      SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/ordermanagement"
+      SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/OrderManagement"
     networks:
       - app-network
     restart: always
@@ -228,6 +476,8 @@ services:
       ]
     environment:
       SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/notification"
+      rabbit_host: rabbitmq
+      rabbit_port: 5672
     networks:
       - app-network
     depends_on:
@@ -250,7 +500,9 @@ services:
         "python /app/rabbitmq/amqp_setup.py && python error.py"
       ]
     environment:
-      SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/error"
+      SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/ErrorLog"
+      rabbit_host: rabbitmq
+      rabbit_port: 5672
     networks:
       - app-network
     depends_on:
@@ -273,10 +525,10 @@ services:
         "python /app/rabbitmq/amqp_setup.py && python activitylog.py"
       ]
     environment:
-      dbURL: "mysql+mysqlconnector://root:root@host.docker.internal:3306/activitylog"
+      dbURL: "mysql+mysqlconnector://root:root@host.docker.internal:3306/activityLog"
       rabbit_host: rabbitmq
       rabbit_port: 5672
-      PYTHONUNBUFFERED: 1 
+      PYTHONUNBUFFERED: 1
     networks:
       - app-network
     depends_on:
@@ -329,6 +581,17 @@ services:
     networks:
       - app-network
     restart: always
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:5000/api/health"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   frontend:
     build: ./frontend
