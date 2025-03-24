@@ -7,6 +7,31 @@
     <div v-if="userLoggedIn">
       <div class="row g-3 mx-lg-5 mx-sm-3">
         <!-- <h2>Welcome, {{ user.name }}</h2> -->
+         <!-- Recommended Vendors -->
+<div v-if="recommendedVendors.length > 0" class="mt-4 mb-5">
+  <h3>Recommended For You 🍽️</h3>
+  <div class="row g-3">
+    <div
+      v-for="vendor in recommendedVendors"
+      :key="'rec-' + vendor.VendorID"
+      class="col-lg-4 col-md-6"
+    >
+      <RouterLink :to="'/menu/' + vendor.VendorID" class="vendor-menu">
+        <div class="vendor-card card">
+          <div class="card-img-container">
+            <img :src="vendor.ImageURL" class="card-img-top" />
+          </div>
+          <div class="card-body">
+            <h5 class="card-title">{{ vendor.VendorName }}</h5>
+            <p>{{ vendor.Cuisine }}</p>
+            <p>30 min</p>
+          </div>
+        </div>
+      </RouterLink>
+    </div>
+  </div>
+</div>
+
         <h2>All restaurants</h2>
         <div
           v-for="vendor in vendors"
@@ -41,6 +66,7 @@ export default {
       user: null,
       userLoggedIn: false,
       vendors: [],
+      recommendedVendors: ["Kingkong curry"],
     };
   },
   async mounted() {
@@ -50,6 +76,7 @@ export default {
       // this.user = JSON.parse(storedUser);
       this.userLoggedIn = true;
       this.fetchVendors();
+      this.fetchRecommendations();
     }
   },
   methods: {
@@ -62,6 +89,22 @@ export default {
         console.error("Failed to fetch vendors:", error);
       }
     },
+    async fetchRecommendations() {
+    try {
+      const userId = JSON.parse(atob(localStorage.getItem("token").split('.')[1])).id; // Get userId from JWT
+      const response = await fetch("http://localhost:5013/recommend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      const data = await response.json();
+      console.log(data);
+      this.recommendedVendors = data.recommended || [];
+      console.log(data.recommended);
+    } catch (error) {
+      console.error("Failed to fetch recommendations:", error);
+    }
+  },
     addToCart(item) {
       const existingItem = this.cart.find(
         (cartItem) => cartItem.id === item.id
@@ -101,7 +144,9 @@ export default {
       } catch (error) {
         console.error("Order placement failed:", error);
       }
+      
     },
+
   },
 };
 </script>

@@ -376,8 +376,8 @@ services:
     networks:
       - app-network
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "5673:5672"
+      - "15673:15672"
     # volumes:
     #   - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -416,6 +416,21 @@ services:
       - default
     restart: always
 
+  recommendation-service:
+    build: ./backend/recommendation-service
+    working_dir: /app
+    ports:
+      - "5013:5000"
+    environment:
+      FLASK_APP: recommendation.py
+      FLASK_ENV: production
+      DATABASE_URL: postgresql://postgres.idoxtwehkovtpgpskzhh:postgres@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres
+    depends_on:
+      - db
+    networks:
+      - app-network
+      - default
+    restart: always
   group-order-service:
     build: ./backend/group-order-service
     working_dir: /app
