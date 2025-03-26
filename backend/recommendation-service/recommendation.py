@@ -147,8 +147,7 @@ def recommend_vendors():
     try:
         # ✅ STEP 1: Fetch order data from OutSystems REST API
         outsystems_api_url = f"https://outsystems.example.com/api/order_history/{user_id}"
-        headers = {
-            "Authorization": "Bearer <your_api_token>",  # Replace with your API token if required
+        headers = { 
             "Content-Type": "application/json"
         }
         response = requests.get(outsystems_api_url, headers=headers)
@@ -176,17 +175,16 @@ def recommend_vendors():
         cur.close()
         conn.close()
 
-        # ✅ STEP 4: Count cuisine frequencies
+
         feature_vector = [cuisines_ordered.count(c) for c in CUISINE_TYPES]
 
-        # ✅ STEP 5: Predict user preferences (vector of probabilities for each cuisine)
+
         prediction = model.predict(np.array([feature_vector]))[0]  # 1D array
 
-        # ✅ STEP 6: Get top N predicted cuisines (we’ll use top 2)
         top_indices = np.argsort(prediction)[-2:][::-1]
         top_cuisines = [CUISINE_TYPES[i] for i in top_indices]
 
-        # ✅ STEP 7: Query Supabase vendors matching those top cuisines
+
         conn = get_supabase_connection()
         cur = conn.cursor()
 
