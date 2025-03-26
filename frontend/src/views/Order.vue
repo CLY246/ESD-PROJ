@@ -66,7 +66,26 @@ export default {
       user: null,
       userLoggedIn: false,
       vendors: [],
-      recommendedVendors: ["Kingkong curry"],
+      recommendedVendors: [
+  //     {
+  //   VendorID: 1,
+  //   VendorName: "Sushi Express",
+  //   Cuisine: "Japanese",
+  //   ImageURL: "https://images.unsplash.com/photo-1553621042-f6e147245754" // placeholder sushi image
+  // },
+  // {
+  //   VendorID: 2,
+  //   VendorName: "K-BBQ Delight",
+  //   Cuisine: "Korean",
+  //   ImageURL: "https://images.unsplash.com/photo-1600891963939-a7f8d8e84f92"
+  // },
+  // {
+  //   VendorID: 3,
+  //   VendorName: "Mama’s Indian Kitchen",
+  //   Cuisine: "Indian",
+  //   ImageURL: "https://images.unsplash.com/photo-1613145993487-bc2b2d17f45c"
+  // }
+      ],
     };
   },
   async mounted() {
@@ -91,16 +110,23 @@ export default {
     },
     async fetchRecommendations() {
     try {
-      const userId = JSON.parse(atob(localStorage.getItem("token").split('.')[1])).id; // Get userId from JWT
+      // const userId = JSON.parse(atob(localStorage.getItem("token").split('.')[1])).id; // Get userId from JWT
+      // const response = await fetch("http://localhost:5013/recommend", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({ user_id: userId }),
+      // });
+      // const data = await response.json();
+      // console.log(data);
+      // this.recommendedVendors = data.recommended || [];
+      // console.log(data.recommended);
       const response = await fetch("http://localhost:5013/recommend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId }),
-      });
-      const data = await response.json();
-      console.log(data);
-      this.recommendedVendors = data.recommended || [];
-      console.log(data.recommended);
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ user_id: 1 }),
+});
+const { recommended } = await response.json();
+
     } catch (error) {
       console.error("Failed to fetch recommendations:", error);
     }

@@ -2,6 +2,7 @@ Flask==3.0.1
 Flask-SQLAlchemy==3.1.1
 mysql-connector-python==8.3.0
 Flask-CORS
+Flask-JWT-Extended
 mysql-connector-python
 requests
 Flask-Migrate
