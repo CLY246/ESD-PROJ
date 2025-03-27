@@ -118,7 +118,7 @@ class Activity(db.Model):
 def health_check():
     return jsonify({"message": "Activity Log API is running!"})
 
-# RabbitMQ Constants
+monitorBindingKey = "#"
 QUEUE_NAME = "activity_log"
 
 # Connect to RabbitMQ once
@@ -148,7 +148,7 @@ def receive_order_log():
     try:
         # Make sure queue is declared and bound (optional if already done in amqp_setup)
         channel.queue_declare(queue=QUEUE_NAME, durable=True)
-        channel.queue_bind(exchange=amqp_setup.EXCHANGE_NAME, queue=QUEUE_NAME, routing_key="#")
+        channel.queue_bind(exchange=amqp_setup.EXCHANGE_NAME, queue=QUEUE_NAME, routing_key=monitorBindingKey)
 
         channel.basic_consume(queue=QUEUE_NAME, on_message_callback=callback, auto_ack=True)
         print(f"📡 Listening for messages on queue '{QUEUE_NAME}'... [Activity Log Service]")
