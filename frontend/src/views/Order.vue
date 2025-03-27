@@ -76,7 +76,8 @@ export default {
       // this.user = JSON.parse(storedUser);
       this.userLoggedIn = true;
       this.fetchVendors();
-      this.fetchRecommendations();
+      
+      this.fetchAndProcessOrderHistory();
     }
   },
   methods: {
@@ -89,22 +90,44 @@ export default {
         console.error("Failed to fetch vendors:", error);
       }
     },
-    async fetchRecommendations() {
-    try {
-      const userId = JSON.parse(atob(localStorage.getItem("token").split('.')[1])).id; // Get userId from JWT
-      const response = await fetch("http://localhost:5013/recommend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: userId }),
-      });
-      const data = await response.json();
-      console.log(data);
-      this.recommendedVendors = data.recommended || [];
-      console.log(data.recommended);
-    } catch (error) {
-      console.error("Failed to fetch recommendations:", error);
+    async fetchAndProcessOrderHistory() {
+  try {
+    // Fetch order history data from another API
+    const orderHistoryResponse = await fetch("https://personal-aefq3pkb.outsystemscloud.com/OrderManagement/rest/OrderHistory/getHistory/1002");
+    console.log(orderHistoryResponse.UserOrdersAPI.OrderDetails)
+    
+    if (!orderHistoryResponse.ok) {
+      
+      throw new Error('Failed to fetch order history');
     }
-  },
+    
+    const orderHistoryData = await orderHistoryResponse.json();
+    console.log(orderHistoryData);
+    
+    // Check if the response is an array
+    if (Array.isArray(orderHistoryData)) {
+      // Send the order history data to your recommendations API
+      const recommendationsResponse = await fetch('http://localhost:5013/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ OrderHistory: orderHistoryData })
+      });
+      
+      if (!recommendationsResponse.ok) {
+        throw new Error('Failed to send data to recommendations API');
+      }
+      
+      const recommendationsResult = await recommendationsResponse.json();
+      console.log("Recommendations:", recommendationsResult);
+    } else {
+      console.error('Order history response is not an array');
+    }
+  } catch (error) {
+    console.error("Error processing order history:", error);
+  }
+},
     addToCart(item) {
       const existingItem = this.cart.find(
         (cartItem) => cartItem.id === item.id
