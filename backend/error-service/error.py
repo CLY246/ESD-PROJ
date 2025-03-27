@@ -207,7 +207,7 @@ from datetime import datetime
 from rabbitmq import amqp_setup
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = environ.get("dbURL") or \
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("dbURL") or \
 "mysql+mysqlconnector://root:root@host.docker.internal:3306/ErrorLog"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
