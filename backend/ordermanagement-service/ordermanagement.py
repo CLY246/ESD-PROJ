@@ -481,17 +481,35 @@ def update_order_status(order_id):
 
     return jsonify({"message": "Order status updated"})
 
+# @app.route('/orders/<int:order_id>', methods=['GET'])
+# def get_order(order_id):
+#     order = Order.query.filter_by(OrderID=order_id).first()
+#     if not order:
+#         return jsonify({"message": "Order not found"}), 404
+#     return jsonify(order.json()), 200
+
+
 @app.route('/orders/<int:order_id>', methods=['GET'])
 def get_order(order_id):
-    order = Order.query.filter_by(OrderID=order_id).first()
-    if not order:
-        return jsonify({"message": "Order not found"}), 404
-    return jsonify(order.json()), 200
+    try:
+        print(f"Looking for OrderID {order_id}...")
+        order = Order.query.filter_by(OrderID=order_id).first()
+        if not order:
+            return jsonify({"message": "Order not found"}), 404
+        print("Found:", order.json())
+        return jsonify(order.json()), 200
+    except Exception as e:
+        print("❌ ERROR while fetching order:", e)
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/orders/user/<string:user_id>', methods=['GET'])
+
+
+
+@app.route('/orders/user/<user_id>', methods=['GET'])
 def get_orders_by_user(user_id):
-    orders = Order.query.filter_by(UserID=user_id).all()
+    orders = Order.query.filter_by(UserID=str(user_id)).all()
     return jsonify([order.json() for order in orders])
+
 
 @app.route('/orders/<int:order_id>/full', methods=['GET'])
 def get_full_order(order_id):
@@ -548,5 +566,10 @@ def delete_queue(queue_id):
     db.session.commit()
     return jsonify({"message": "Deleted"})
 
+# -------------------- Create tables if not exist --------------------
+with app.app_context():
+    db.create_all()
+
+# -------------------- App start --------------------
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
