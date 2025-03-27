@@ -125,7 +125,7 @@ export default {
       }
 
       try {
-        const response = await fetch("http://localhost:5001/orders", {
+        const response = await fetch("http://localhost:5000/place_order", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

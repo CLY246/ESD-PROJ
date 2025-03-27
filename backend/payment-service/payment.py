@@ -248,10 +248,6 @@ def db_check():
 
 
 
-
-
-
-
 stripe.api_key = "sk_test_51R2Nh0Bz8bLJBV2onRtvizH4yVf4xcufKaJTXshVg1g42nDYe1M9hGnDeJsM4IWMWCBq1GNEQs0rZ53ue6hA08Xe00IXHYXH0R"
 endpoint_secret = os.getenv("whsec_119db3c043f993227277345c6a1fbc9d49d1898b2e8bd903181a0f326bcccd9a")
 
@@ -310,7 +306,8 @@ def process_payment():
         db.session.add(new_transaction)
         db.session.commit()
 
-        return jsonify({"message": "Payment initiated successfully", "session_url": session.url}), 201
+        return jsonify({"message": "Payment initiated successfully", "session_url": session.url, "TransactionID": transaction_id, "code": 201}), 201
+        # return jsonify({"message": "Payment initiated successfully", "session_url": session.url}), 201
         # return jsonify({"message": "Payment initiated successfully", "session_url": session.url, "transaction": new_transaction.json()}), 201
 
     except Exception as e:
@@ -346,27 +343,14 @@ def stripe_webhook():
 
     return jsonify({"status": "received"}), 200
 
-# @app.route("/payments", methods=["POST"])
-# def process_payment():
-#     data = request.json
-#     order_id = data.get("OrderID")
-#     amount = data.get("Amount")
-#     payment_method = data.get("PaymentMethod")
 
-#     if not order_id or not amount or not payment_method:
-#         return jsonify({"message": "OrderID, Amount, and PaymentMethod are required"}), 400
+@app.route("/payments/transaction/<int:transaction_id>", methods=["GET"])
+def get_payment_by_transaction_id(transaction_id):
+    transaction = Transaction.query.filter_by(TransactionID=transaction_id).first()
+    if not transaction:
+        return jsonify({"message": "Transaction not found"}), 404
+    return jsonify(transaction.json()), 200
 
-#     new_transaction = Transaction(
-#         OrderID=order_id,
-#         Amount=amount,
-#         PaymentMethod=payment_method,
-#         PaymentStatus='Pending'  # Initially Pending
-#     )
-
-#     db.session.add(new_transaction)
-#     db.session.commit()
-
-#     return jsonify({"message": "Payment initiated successfully", "transaction": new_transaction.json()}), 201
 
 @app.route("/payments/<int:order_id>", methods=["GET"])
 def get_payment_status(order_id):

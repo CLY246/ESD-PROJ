@@ -589,12 +589,7 @@ services:
       - "5011:5000"
     volumes:
       - ./backend/rabbitmq:/app/rabbitmq
-    command:
-      [
-        "sh",
-        "-c",
-        "python /app/rabbitmq/amqp_setup.py && python placeanorder.py"
-      ]
+    command: [ "python", "placeanorder.py" ]
     environment:
       ORDER_MANAGEMENT_URL: "http://ordermanagement-service:5003/orders"
       AMQP_BROKER_URL: "amqp://guest:guest@rabbitmq:5672/"

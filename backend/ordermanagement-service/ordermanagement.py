@@ -432,6 +432,13 @@ def db_check():
         return jsonify({"status": "Connected to Supabase DB ✅"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+
+@app.route("/orders", methods=["GET"])
+def get_all_orders():
+    orders = Order.query.all()
+    return jsonify([order.json() for order in orders])
+
 
 
 @app.route('/orders', methods=['POST'])
