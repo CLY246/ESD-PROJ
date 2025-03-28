@@ -66,7 +66,7 @@ export default {
       user: null,
       userLoggedIn: false,
       vendors: [],
-      recommendedVendors: ["Kingkong curry"],
+      recommendedVendors: [],
     };
   },
   async mounted() {
@@ -94,7 +94,7 @@ export default {
   try {
     // Fetch order history data from another API
     const orderHistoryResponse = await fetch("https://personal-aefq3pkb.outsystemscloud.com/OrderManagement/rest/OrderHistory/getHistory/1002");
-    console.log(orderHistoryResponse.UserOrdersAPI.OrderDetails)
+    
     
     if (!orderHistoryResponse.ok) {
       
@@ -102,17 +102,20 @@ export default {
     }
     
     const orderHistoryData = await orderHistoryResponse.json();
-    console.log(orderHistoryData);
-    
+    console.log(orderHistoryData.UserOrdersAPI.OrderDetails)
+
     // Check if the response is an array
-    if (Array.isArray(orderHistoryData)) {
+    if (Array.isArray(orderHistoryData.UserOrdersAPI.OrderDetails)) {
       // Send the order history data to your recommendations API
       const recommendationsResponse = await fetch('http://localhost:5013/test', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ OrderHistory: orderHistoryData })
+        body: JSON.stringify({
+      OrderHistory: orderHistoryData.UserOrdersAPI.OrderDetails
+  })
+
       });
       
       if (!recommendationsResponse.ok) {
@@ -120,6 +123,7 @@ export default {
       }
       
       const recommendationsResult = await recommendationsResponse.json();
+      this.recommendedVendors = recommendationsResult.recommended;
       console.log("Recommendations:", recommendationsResult);
     } else {
       console.error('Order history response is not an array');

@@ -234,12 +234,16 @@ app = Flask(__name__)
 app.config["DEBUG"] = True
 CORS(app)  
 
-# app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres.idoxtwehkovtpgpskzhh:postgres@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres"
-# app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # db = SQLAlchemy()
 # with app.app_context():
 #     db.init_app(app)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres.idoxtwehkovtpgpskzhh:postgres@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
+
+db = SQLAlchemy(app)
 
 
 # class Recommendation(db.Model):
@@ -252,34 +256,69 @@ CORS(app)
 MODEL_PATH = "model/recommendation_model.h5"
 model = tf.keras.models.load_model(MODEL_PATH)
 
+with open("model/cuisine_columns.json", "r") as f:
+    CUISINE_COLUMNS = json.load(f)
+
+with open("model/vendor_columns.json", "r") as f:
+    VENDOR_COLUMNS = json.load(f)
+
 # 🔹 Cuisine categories used during training
 CUISINE_TYPES = ["Japanese", "Korean", "Western", "Chinese", "Thai", "Indian"]
 
-# 🔹 Supabase PostgreSQL credentials
-# DB_URL = "aws-0-ap-southeast-1.pooler.supabase.com"
-# DB_PORT = "6543"
-# DB_NAME = "postgres"
-# DB_USER = "postgres.idoxtwehkovtpgpskzhh"
-# DB_PASS = "postgres"
+class Vendor(db.Model):
+    __tablename__ = "vendors"
 
-# def get_supabase_connection():
-#     return psycopg2.connect(
-#         host=DB_URL,
-#         port=DB_PORT,
-#         dbname=DB_NAME,
-#         user=DB_USER,
-#         password=DB_PASS
-#     )
+    VendorID = db.Column(db.Integer, primary_key=True)
+    VendorName = db.Column(db.String(255))
+    Cuisine = db.Column(db.String(255))
+    ImageURL = db.Column(db.String(2048))
+
 
 @app.route('/test', methods=['POST'])
 def recommendations():
-    data = request.get_json()
-    if not data or 'OrderHistory' not in data:
-        return jsonify({"error": "OrderHistory data is required"}), 400
+    try:
+        data = request.get_json()
 
-    order_history = data['OrderHistory']
-    # Process your order_history array here
-    return jsonify({"message": "Order history processed", "orders": order_history}), 200
+        if not data or 'OrderHistory' not in data:
+            return jsonify({"error": "OrderHistory data is required"}), 400
+
+        order_history = data['OrderHistory']
+
+        # Step 1: Count cuisines (use correct key: "Cuisine")
+        cuisines_ordered = [order["Cuisine"] for order in order_history]
+
+        # Step 2: Build feature vector from cuisine_columns
+        cuisine_counts = {cuisine: cuisines_ordered.count(cuisine) for cuisine in CUISINE_COLUMNS}
+        feature_vector = [cuisine_counts.get(col, 0) for col in CUISINE_COLUMNS]
+
+        # Step 3: Predict
+        prediction = model.predict(np.array([feature_vector]))[0]
+        top_indices = np.argsort(prediction)[-2:][::-1]
+        # top_vendor_ids = [str(order["VendorID"]) for order in order_history[:1]]
+        top_cuisines = [CUISINE_COLUMNS[i] for i in top_indices]
+        # top_cuisines = ['Western'] 
+        # top_vendor_ids = [VENDOR_COLUMNS[i] for i in top_indices]
+        print("Top predicted cuisines:", top_cuisines)
+        logging.info(f" Top predicted cuisines: {top_cuisines}")
+
+        # Step 4: Filter orders for top vendor matches
+        seen = set()
+        recommended_vendors = []
+        
+        vendors = Vendor.query.filter(Vendor.Cuisine.in_(top_cuisines)).limit(5).all()
+
+        recommended_vendors = [{
+            "VendorID": vendor.VendorID,
+            "VendorName": vendor.VendorName,
+            "Cuisine": vendor.Cuisine,
+            "ImageURL": vendor.ImageURL
+        } for vendor in vendors]
+        return jsonify({"recommended": recommended_vendors})
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
 
 # @app.route("/recommend/orderhistory", methods=["POST"])
@@ -334,9 +373,7 @@ def home():
 
 
 
-# -------------------- Create tables if not exist --------------------
-with app.app_context():
-    db.create_all()
+# -------------------- Create tables if not exist -------------------
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5013)
+    app.run(host="0.0.0.0", port=5000)
