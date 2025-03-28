@@ -131,3 +131,18 @@ VALUES
 (4, 12, 'Queued'),
 (5, 7, 'Processing'),
 (6, 6, 'Completed');
+
+
+
+
+-- SELECT 
+--     table_name,
+--     column_name,
+--     data_type
+-- FROM 
+--     information_schema.columns
+-- WHERE 
+--     table_schema = 'public'
+-- ORDER BY 
+--     table_name,
+--     ordinal_position;
