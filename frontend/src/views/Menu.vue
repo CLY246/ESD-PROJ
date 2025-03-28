@@ -213,10 +213,12 @@ const startGroupOrder = async () => {
 // };
 const submitPayment = async () => {
   try {
+    const idResponse = await axios.get("http://localhost:5005/next-order-id");
+    const orderId = idResponse.data.OrderID;
     const response = await axios.post(
       "http://localhost:5005/payments",
-      {
-        OrderID: new Date().getTime(), // Generate a temporary OrderID
+      { // Generate a temporary OrderID
+        OrderID: orderId,
         Amount: totalPrice.value,
       },
       {

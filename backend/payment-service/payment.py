@@ -212,7 +212,7 @@ class Transaction(db.Model):
 
     TransactionID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     
-    OrderID = db.Column(BigInteger, nullable=False)
+    OrderID = db.Column(db.Integer, nullable=False)
     Amount = db.Column(db.Numeric(10, 2), nullable=False)
     PaymentMethod = db.Column(db.String(50))
     PaymentStatus = db.Column(db.String(50), default='Pending')  # Ensures payments are validated first
@@ -245,6 +245,15 @@ def db_check():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
+@app.route("/next-order-id", methods=["GET"])
+def get_next_order_id():
+    try:
+        latest_transaction = db.session.query(Transaction).order_by(Transaction.OrderID.desc()).first()
+        next_order_id = (latest_transaction.OrderID + 1) if latest_transaction else 1
+        return jsonify({"OrderID": next_order_id})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 
 
@@ -306,9 +315,9 @@ def process_payment():
         db.session.add(new_transaction)
         db.session.commit()
 
-        return jsonify({"message": "Payment initiated successfully", "session_url": session.url, "TransactionID": transaction_id, "code": 201}), 201
+        # return jsonify({"message": "Payment initiated successfully", "session_url": session.url, "TransactionID": transaction_id, "code": 201}), 201
         # return jsonify({"message": "Payment initiated successfully", "session_url": session.url}), 201
-        # return jsonify({"message": "Payment initiated successfully", "session_url": session.url, "transaction": new_transaction.json()}), 201
+        return jsonify({"message": "Payment initiated successfully", "session_url": session.url, "transaction": new_transaction.json()}), 201
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
