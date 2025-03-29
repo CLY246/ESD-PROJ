@@ -1,23 +1,57 @@
 <template>
-  <h1>Payment success</h1>
+  <div class="success-container">
+    <img
+      class="successpng"
+      src="https://cdn.dribbble.com/userupload/23589345/file/original-3facc6dbca53f39fa3175635da27a61a.gif"
+    />
+    <h1 class="success-message">Payment Successful!</h1>
+    <p class="confirmation-text">
+      The order confirmation has been sent to your email.
+    </p>
+
+    <table class="order-table">
+      <thead>
+        <tr>
+          <th>Order Item</th>
+          <th>Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="item in savedCart" :key="item.ItemID">
+          <td>1 x {{ item.ItemName }}</td>
+          <td>${{ item.Price }}</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td><strong>TOTAL</strong></td>
+          <td>
+            <strong>${{ transactiondata.Amount }}</strong>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+    <RouterLink :to="'/'" class="backbtn">Return to Main Page</RouterLink>
+  </div>
 </template>
 
 <script>
 export default {
   data() {
     return {
-      user: null,
+      transactiondata: null,
+      savedCart: [],
+      storedUser: "",
     };
   },
   async mounted() {
-    const storedUser = localStorage.getItem("user_id");
+    this.storedUser = localStorage.getItem("user_id");
     const transaction = sessionStorage.getItem("transaction");
-    const transactiondata = JSON.parse(transaction);
-    console.log(transactiondata.OrderID);
+    this.transactiondata = JSON.parse(transaction);
     const vendorCuisine = sessionStorage.getItem("cuisine");
     const vendorName = sessionStorage.getItem("vendorname");
-    const savedCart = JSON.parse(sessionStorage.getItem("cart") || "[]");
-    console.log("Saved Cart:", savedCart);
+    this.savedCart = JSON.parse(sessionStorage.getItem("cart") || "[]");
+    sessionStorage.clear();
 
     const mappedCart = savedCart.map((item) => {
       return {
@@ -49,7 +83,7 @@ export default {
         ItemName: item.ItemName,
         Quantity: 1,
         Price: item.Price,
-        VendorID: item.VendorID
+        VendorID: item.VendorID,
       };
     });
 
@@ -118,3 +152,58 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.success-container {
+  text-align: center;
+  padding: 20px;
+}
+.success-message {
+  color: green;
+}
+.successpng {
+  height: 310px;
+  width: 400px;
+}
+h1 {
+  font-size: 30px;
+}
+p {
+  font-size: 12px;
+  color: gray;
+}
+
+.order-table {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  border-collapse: collapse;
+  margin-top:30px
+}
+.order-table th {
+  background-color: GhostWhite;
+  color: black;
+  text-align: left;
+  padding: 10px;
+}
+.order-table td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+  font-size:12px;
+}
+tfoot td {
+  font-weight: bold;
+  border-bottom: 2px solid black;
+}
+.backbtn{
+    border: 0px;
+    padding: 15px 115px;
+    border-radius: 25px;
+    background-color: #b0c4de;
+    display: inline-block;
+    color: #fff;
+    margin-top: 50px;
+    text-decoration: none;
+}
+</style>

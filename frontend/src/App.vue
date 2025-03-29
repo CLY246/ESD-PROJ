@@ -16,7 +16,7 @@ export default {
     const route = useRoute();
 
     // Define exact routes where navbar should be hidden
-    const hideNavbarRoutes = ["/login"];
+    const hideNavbarRoutes = ["/login", "/success"];
 
     // Compute if navbar should be shown
     const showNavbar = computed(() => {
