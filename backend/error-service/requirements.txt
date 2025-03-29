@@ -5,3 +5,5 @@ Flask-CORS
 mysql-connector-python
 requests
 pika
+psycopg2-binary
+

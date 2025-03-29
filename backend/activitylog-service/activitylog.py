@@ -85,11 +85,12 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from rabbitmq import amqp_setup  # ✅ Use shared setup logic
+from sqlalchemy import text
+
 
 # Flask App Setup
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("dbURL") or \
-    "mysql+mysqlconnector://root:root@host.docker.internal:3306/activityLog"
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres.rykllqzsqugqdvbvxdbv:Smelly246!@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
 db = SQLAlchemy(app)
@@ -118,6 +119,53 @@ class Activity(db.Model):
 def health_check():
     return jsonify({"message": "Activity Log API is running!"})
 
+# Endpoint to log activities via Postman
+@app.route('/api/log-activity', methods=['POST'])
+def log_activity():
+    try:
+        # Get JSON data from the request
+        data = request.get_json()
+        activity_description = data.get('Activity_Description')
+
+        if not activity_description:
+            return jsonify({"error": "Activity description is required"}), 400
+
+        # Create and save the activity log to the database
+        activity_log = Activity(Activity_Description=activity_description)
+        db.session.add(activity_log)
+        db.session.commit()
+
+        # Return success response with logged data
+        return jsonify({
+            "message": "Activity logged successfully",
+            "activity": activity_log.json()
+        }), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Endpoint to retrieve all activity logs
+@app.route('/api/get-activities', methods=['GET'])
+def get_activities():
+    try:
+        # Query all activity logs from the database
+        activities = Activity.query.all()
+        if not activities:
+            return jsonify({"message": "No activities found"}), 404
+        
+        # Convert the activity logs to JSON and return as a response
+        return jsonify({"activities": [activity.json() for activity in activities]}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/db-check")
+def db_check():
+    try:
+        db.session.execute(text("SELECT 1"))
+        return jsonify({"status": "Connected to DB ✅"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
 monitorBindingKey = "#"
 QUEUE_NAME = "activity_log"
 
@@ -158,6 +206,21 @@ def receive_order_log():
 
 # Start the consumer thread
 threading.Thread(target=receive_order_log, daemon=True).start()
+
+# # Run Flask app
+# if __name__ == "__main__":
+#     print("🚀 Starting Flask app for Activity Log Service...")
+#     app.run(host="0.0.0.0", port=5000, debug=False)
+
+
+
+# -------------------- Create tables if not exist --------------------
+with app.app_context():
+    try:
+        db.create_all()
+        print("✅ Tables created successfully!")
+    except Exception as e:
+        print(f"❌ Error creating tables: {str(e)}")
 
 # Run Flask app
 if __name__ == "__main__":

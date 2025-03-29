@@ -205,10 +205,10 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from rabbitmq import amqp_setup
+from sqlalchemy import text
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("dbURL") or \
-"mysql+mysqlconnector://root:root@host.docker.internal:3306/ErrorLog"
+app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres.rykllqzsqugqdvbvxdbv:Smelly246!@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
 db = SQLAlchemy(app)
@@ -229,6 +229,31 @@ class ErrorLog(db.Model):
             "Error_Details": self.Error_Details
         }
 
+# Endpoint to log errors via Postman
+@app.route('/api/log-error', methods=['POST'])
+def log_error():
+    try:
+        # Get JSON data from the request
+        data = request.get_json()
+        error_details = data.get('Error_Details')
+
+        if not error_details:
+            return jsonify({"error": "Error details are required"}), 400
+
+        # Create and save the error log to the database
+        error_log = ErrorLog(Error_Details=error_details)
+        db.session.add(error_log)
+        db.session.commit()
+
+        # Return success response with logged data
+        return jsonify({
+            "message": "Error logged successfully",
+            "error": error_log.json()
+        }), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # Health check endpoint
 @app.route('/api/health')
 def health_check():
@@ -237,6 +262,15 @@ def health_check():
 monitorBindingKey = "*.error"
 QUEUE_NAME = "error"
 
+
+@app.route("/api/db-check")
+def db_check():
+    try:
+        db.session.execute(text("SELECT 1"))
+        return jsonify({"status": "Connected to DB ✅"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
 # Connect to RabbitMQ once
 connection, channel = amqp_setup.connect()
 
@@ -274,6 +308,28 @@ def receive_error_log():
 
 # Start the consumer thread
 threading.Thread(target=receive_error_log, daemon=True).start()
+
+# # Run Flask app
+# if __name__ == "__main__":
+#     print("🚀 Starting Flask app for Error Service...")
+#     app.run(host="0.0.0.0", port=5000, debug=False)
+    
+
+# # -------------------- Create tables if not exist --------------------
+# with app.app_context():
+#     db.create_all()
+
+# if __name__ == '__main__':
+#     app.run(host='0.0.0.0', port=5000, debug=os.getenv("FLASK_DEBUG", "False") == "True")
+
+
+# -------------------- Create tables if not exist --------------------
+with app.app_context():
+    try:
+        db.create_all()
+        print("✅ Tables created successfully!")
+    except Exception as e:
+        print(f"❌ Error creating tables: {str(e)}")
 
 # Run Flask app
 if __name__ == "__main__":
