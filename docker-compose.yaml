@@ -458,7 +458,7 @@ services:
       SQLALCHEMY_DATABASE_URI: "postgresql://postgres.zwflnrnrvemjodtulkva:postgres@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
     command: gunicorn -b 0.0.0.0:5000 ordermanagement:app
     depends_on:
-      - db
+    - db 
     networks:
       - app-network
     restart: always
@@ -525,7 +525,7 @@ services:
         "python /app/rabbitmq/amqp_setup.py && python error.py"
       ]
     environment:
-      SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/ErrorLog"
+      SQLALCHEMY_DATABASE_URI: "postgresql://postgres.rykllqzsqugqdvbvxdbv:Smelly246!@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
       rabbit_host: rabbitmq
       rabbit_port: 5672
     networks:
@@ -550,7 +550,7 @@ services:
         "python /app/rabbitmq/amqp_setup.py && python activitylog.py"
       ]
     environment:
-      dbURL: "mysql+mysqlconnector://root:root@host.docker.internal:3306/activityLog"
+      dbURL: "postgresql://postgres.rykllqzsqugqdvbvxdbv:Smelly246!@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
       rabbit_host: rabbitmq
       rabbit_port: 5672
       PYTHONUNBUFFERED: 1
