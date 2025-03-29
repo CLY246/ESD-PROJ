@@ -130,3 +130,12 @@ def get_user(user_id):
         return jsonify({"UserID": user.id, "Username": user.username})
     else:
         return jsonify({"error": "User not found"}), 404
+    
+@app.route("/email/<user_id>", methods=["GET"])
+def get_useremail(user_id):
+    user = User.query.filter_by(id=user_id).first()
+    
+    if user:
+        return jsonify({"UserID": user.id, "Email": user.email})
+    else:
+        return jsonify({"error": "User not found"}), 404

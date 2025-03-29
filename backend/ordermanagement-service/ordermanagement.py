@@ -62,17 +62,17 @@ class OrderItem(db.Model):
     ItemName = db.Column(db.String(255)) 
     Quantity = db.Column(db.Integer, nullable=False)
     Price = db.Column(db.Float, nullable=False)
-    StoreID = db.Column(db.Integer, nullable=False)
+    VendorID = db.Column(db.Integer, nullable=False)
 
     def json(self):
         return {
             "OrderItemID": self.OrderItemID,
             "OrderID": self.OrderID,
             "ItemID": self.ItemID,
-            "ItemName": self.ItemName,
             "Quantity": self.Quantity,
             "Price": self.Price,
-            "StoreID": self.StoreID
+            "VendorID": self.VendorID,
+            "ItemName": self.ItemName,
         }
 
 
@@ -161,7 +161,7 @@ def place_order():
 
     # Step 1: Create Order
     new_order = Order(
-        OrderID=data.get("OrderID"),
+        OrderID = data.get("OrderID"),
         UserID=user_id,
         TotalAmount=total_amount,
         TransactionID=transaction_id,
@@ -182,7 +182,7 @@ def place_order():
             ItemName=item.get("ItemName"),  # ✅ use .get() in case it's optional
             Quantity=item["Quantity"],
             Price=item["Price"],
-            StoreID=data.get("VendorID")
+            VendorID=data.get("VendorID")
         )
         db.session.add(order_item)
 
@@ -190,6 +190,13 @@ def place_order():
 
     return jsonify({"message": "Order placed", "OrderID": new_order.OrderID}), 201
 
+@app.route('/orders/<int:order_id>/items', methods=['GET'])
+def get_order_items_by_order_id(order_id):
+    items = OrderItem.query.filter_by(OrderID=order_id).all()
+    if not items:
+        return jsonify({"message": "No items found for this OrderID"}), 404
+
+    return jsonify([item.json() for item in items]), 200
 
 
 @app.route('/orders/<int:order_id>/items', methods=['POST'])

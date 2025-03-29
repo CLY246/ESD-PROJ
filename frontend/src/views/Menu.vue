@@ -19,7 +19,6 @@
       Start Group Order
     </button>
 
-
     <!-- Sticky Category Tabs -->
     <div class="sticky-tabs">
       <div class="category-tabs">
@@ -103,13 +102,14 @@
           <!-- Sticky Footer (Total & Payment Button) -->
           <div class="cart-footer">
             <p class="fw-bold">Total: ${{ totalPrice }}</p>
-            <StripeCheckout ref="checkoutRef"
+            <StripeCheckout
+              ref="checkoutRef"
               mode="payment"
               :pk="publishableKey"
               :line-items="lineItems"
               :success-url="successURL"
               :cancel-url="cancelURL"
-              @loading="v => loading = v"
+              @loading="(v) => (loading = v)"
             />
             <button class="btn btn-dark w-100" @click="submitPayment">
               Review Payment and Address
@@ -137,19 +137,21 @@ const cart = ref([]);
 const loading = ref(false);
 
 // Stripe Variables
-const publishableKey = ref("pk_test_51R2Nh0Bz8bLJBV2o8mzAgS2z1jPVz0RVXTsJLF2lcH6TNpbfiOWNDhqF5it1GN2KkT8n7NUqltpJU7uAx5yIPuyl00umDgnPUu");
+const publishableKey = ref(
+  "pk_test_51R2Nh0Bz8bLJBV2o8mzAgS2z1jPVz0RVXTsJLF2lcH6TNpbfiOWNDhqF5it1GN2KkT8n7NUqltpJU7uAx5yIPuyl00umDgnPUu"
+);
 const successURL = ref("http://localhost:8080/success");
 const cancelURL = ref("http://localhost:8080/cancel");
 
 // Compute Line Items for Stripe
 const lineItems = computed(() =>
-  cart.value.map(item => ({
+  cart.value.map((item) => ({
     price_data: {
       currency: "sgd",
       product_data: { name: item.ItemName },
       unit_amount: Math.round(item.Price * 100),
     },
-    quantity: 1
+    quantity: 1,
   }))
 );
 
@@ -176,16 +178,19 @@ const fetchMenuItems = async () => {
 const startGroupOrder = async () => {
   try {
     const userId = localStorage.getItem("user_id");
-    const response = await axios.post("http://localhost:8000/group-order/invite", {
-      vendorId: vendorId,
-      userId: userId
-    });
+    const response = await axios.post(
+      "http://localhost:8000/group-order/invite",
+      {
+        vendorId: vendorId,
+        userId: userId,
+      }
+    );
 
     const cartId = response.data.cartId;
     // inviteLink.value = response.data.invite_link;
 
     localStorage.setItem("shared_cart_id", cartId);
-    
+
     router.push(`/group-order/join/${cartId}`);
   } catch (error) {
     console.error("Error starting group order:", error);
@@ -225,7 +230,12 @@ const submitPayment = async () => {
         headers: { "Content-Type": "application/json" }, // Ensure JSON format
       }
     );
-
+    if (response.data.transaction) {
+      sessionStorage.setItem("transaction", JSON.stringify(response.data.transaction));
+      sessionStorage.setItem("cart", JSON.stringify(cart.value));
+      sessionStorage.setItem('cuisine', vendor.value.Cuisine);
+      sessionStorage.setItem('vendorname', vendor.value.VendorName);
+    }
     if (response.data.session_url) {
       window.location.href = response.data.session_url; // Redirect to Stripe
     } else {
@@ -236,7 +246,6 @@ const submitPayment = async () => {
     alert("Failed to initiate payment.");
   }
 };
-
 
 onMounted(() => {
   fetchVendor();
@@ -405,9 +414,9 @@ h5 {
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 250px; 
+  max-width: 250px;
   word-wrap: break-word;
-  line-height: 1.4em; 
+  line-height: 1.4em;
   max-height: 2.8em;
   min-height: 2.8em;
 }
@@ -436,9 +445,9 @@ h5 {
   bottom: 27px;
 }
 
-.card:hover{
-    background-color: lightgoldenrodyellow;
-    transform: scale(1.05);
+.card:hover {
+  background-color: lightgoldenrodyellow;
+  transform: scale(1.05);
 }
 
 /* Sticky Full-Height Cart */
