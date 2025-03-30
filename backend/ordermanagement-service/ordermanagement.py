@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from sqlalchemy import text
+import traceback
 
 
 
@@ -32,7 +33,7 @@ class Order(db.Model):
     UserID = db.Column(db.String, nullable=False)
     OrderDateTime = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp(), nullable=False)
     TotalAmount = db.Column(db.Float, nullable=False)
-    OrderStatus = db.Column(db.String(50), default="pending")
+    OrderStatus = db.Column(db.String(50), default="Completed")
     TransactionID = db.Column(db.String(255), nullable=False)
 
     VendorID = db.Column(db.Integer, nullable=True)
@@ -151,44 +152,65 @@ def get_all_orders():
 
 @app.route('/orders', methods=['POST'])
 def place_order():
-    data = request.json
-    user_id = data.get("UserID")
-    total_amount = data.get("TotalAmount")
-    transaction_id = data.get("TransactionID")
+    try:
+        data = request.json
+        user_id = data.get("UserID")
+        total_amount = data.get("TotalAmount")
+        transaction_id = data.get("TransactionID")
 
-    if not user_id or not total_amount or not transaction_id:
-        return jsonify({"message": "Missing data"}), 400
+        if not user_id or not total_amount or not transaction_id:
+            return jsonify({"message": "Missing data"}), 400
 
-    # Step 1: Create Order
-    new_order = Order(
-        OrderID = data.get("OrderID"),
-        UserID=user_id,
-        TotalAmount=total_amount,
-        TransactionID=transaction_id,
-        VendorID=data.get("VendorID"),
-        VendorName=data.get("VendorName"),
-        Cuisine=data.get("Cuisine"),
-        ImageURL=data.get("ImageURL")
-    )
-
-    db.session.add(new_order)
-    db.session.commit()  # Commit once to get new_order.OrderID
-
-    # Step 2: Add Items if present
-    for item in data.get("Items", []):
-        order_item = OrderItem(
-            OrderID=new_order.OrderID,
-            ItemID=item["ItemID"],
-            ItemName=item.get("ItemName"),  # ✅ use .get() in case it's optional
-            Quantity=item["Quantity"],
-            Price=item["Price"],
-            VendorID=data.get("VendorID")
+        # Step 1: Create Order
+        new_order = Order(
+            OrderID = data.get("OrderID"),
+            UserID=user_id,
+            TotalAmount=total_amount,
+            TransactionID=transaction_id,
+            VendorID=data.get("VendorID"),
+            VendorName=data.get("VendorName"),
+            Cuisine=data.get("Cuisine"),
+            ImageURL=data.get("ImageURL")
         )
-        db.session.add(order_item)
+        db.session.add(new_order)
+        db.session.commit()
 
-    db.session.commit()
+        # Step 2: Add Items if present
+        for item in data.get("OrderItems", []):
+            order_item = OrderItem(
+                OrderID=new_order.OrderID,
+                ItemID=item["ItemID"],
+                ItemName=item.get("ItemName"),
+                Quantity=item["Quantity"],
+                Price=item["Price"],
+                VendorID=data.get("VendorID")
+            )
+            db.session.add(order_item)
 
-    return jsonify({"message": "Order placed", "OrderID": new_order.OrderID}), 201
+        db.session.commit()
+
+        items = OrderItem.query.filter_by(OrderID=new_order.OrderID).all()
+
+        return jsonify({
+            "code": 201,
+            "message": "✅ Order placed successfully",
+            "data": {
+                "Order": new_order.json(),
+                "Items": [item.json() for item in items]
+            }
+        }), 201
+
+    except Exception as e:
+        print("❌ Exception in /orders:")
+        traceback.print_exc()
+        return jsonify({
+            "code": 500,
+            "message": "Internal error in /orders",
+            "error": str(e)
+        }), 500
+
+
+
 
 @app.route('/orders/<int:order_id>/items', methods=['GET'])
 def get_order_items_by_order_id(order_id):
@@ -205,12 +227,12 @@ def add_order_item(order_id):
     item_id = data.get("ItemID")
     quantity = data.get("Quantity")
     price = data.get("Price")
-    store_id = data.get("StoreID")
+    vendor_id = data.get("VendorID")
 
-    if not item_id or not quantity or not price or not store_id:
+    if not item_id or not quantity or not price or not vendor_id:
         return jsonify({"message": "Missing item details"}), 400
 
-    new_item = OrderItem(OrderID=order_id, ItemID=item_id, Quantity=quantity, Price=price, StoreID=store_id)
+    new_item = OrderItem(OrderID=order_id, ItemID=item_id, Quantity=quantity, Price=price, VendorID=vendor_id)
     db.session.add(new_item)
     db.session.commit()
 

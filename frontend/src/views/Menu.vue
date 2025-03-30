@@ -151,7 +151,7 @@ const lineItems = computed(() =>
       product_data: { name: item.ItemName },
       unit_amount: Math.round(item.Price * 100),
     },
-    quantity: 1,
+    quantity: item.quantity || 1
   }))
 );
 
@@ -205,9 +205,9 @@ const startGroupOrder = async () => {
 //       PaymentMethod: "Stripe"
 //     });
 
-//     if (response.data.session_url) {
+//     if (response.data.paymentUrl) {
 //       // Redirect to Stripe Checkout URL
-//       window.location.href = response.data.session_url;
+//       window.location.href = response.data.paymentUrl;
 //     } else {
 //       alert("Error initiating payment.");
 //     }
@@ -236,8 +236,8 @@ const submitPayment = async () => {
       sessionStorage.setItem('cuisine', vendor.value.Cuisine);
       sessionStorage.setItem('vendorname', vendor.value.VendorName);
     }
-    if (response.data.session_url) {
-      window.location.href = response.data.session_url; // Redirect to Stripe
+    if (response.data.paymentUrl) {
+      window.location.href = response.data.paymentUrl; // Redirect to Stripe
     } else {
       alert("Error initiating payment.");
     }
@@ -253,16 +253,23 @@ onMounted(() => {
 });
 
 const addToCart = (item) => {
-  cart.value.push(item);
+  const existingItem = cart.value.find(i => i.ItemID === item.ItemID);
+  if (existingItem) {
+    existingItem.quantity = (existingItem.quantity || 1) + 1;
+  } else {
+    cart.value.push({ ...item, quantity: 1 });
+  }
 };
+
 
 const removeFromCart = (item) => {
   cart.value = cart.value.filter((i) => i.ItemID !== item.ItemID);
 };
 
 const totalPrice = computed(() =>
-  cart.value.reduce((sum, item) => sum + item.Price, 0).toFixed(2)
+  cart.value.reduce((sum, item) => sum + item.Price * (item.quantity || 1), 0).toFixed(2)
 );
+
 
 const scrollToCategory = (id) => {
   document.getElementById(id).scrollIntoView({ behavior: "smooth" });

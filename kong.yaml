@@ -125,3 +125,74 @@ services:
         regex_priority: 1
 
 
+  - name: payment-service
+    url: http://payment-service:5000
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - http://localhost:8080
+          methods:
+            - GET
+            - POST
+            - OPTIONS
+          headers:
+            - Content-Type
+            - Authorization
+          credentials: true
+
+    routes:
+      - name: create-payment
+        paths: ["/payments"]
+        methods: ["POST", "OPTIONS"]
+        strip_path: false
+
+      - name: get-next-order-id
+        paths: ["/next-order-id"]
+        methods: ["GET"]
+        strip_path: false
+
+  - name: placeanorder-service
+    url: http://placeanorder-service:5000
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - http://localhost:8080
+          methods:
+            - POST
+            - OPTIONS
+          headers:
+            - Content-Type
+            - Authorization
+          credentials: true
+
+    routes:
+      - name: place-order
+        paths: ["/place_order"]
+        methods: ["POST", "OPTIONS"]
+        strip_path: false
+
+
+
+  - name: ordermanagement-service
+    url: http://ordermanagement-service:5000
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - http://localhost:8080
+          methods:
+            - GET
+            - POST
+            - OPTIONS
+          headers:
+            - Content-Type
+            - Authorization
+          credentials: true
+
+    routes:
+      - name: create-order
+        paths: ["/orders"]
+        methods: ["POST", "OPTIONS"]
+        strip_path: false

@@ -9,15 +9,17 @@ const paymentUrl = ref("");
 
 const createPayment = async () => {
   try {
-    const response = await axios.post("https://your-outsystems-app.com/api/payments", {
-      amount: amount.value,
-      currency: "USD",
-      userId: 123, // Replace with actual user ID
+    const response = await axios.post("http://localhost:8000/payments", {
+      Amount: amount.value,
     });
+
+    console.log("Stripe response:", response.data); // Debug output
 
     if (response.data.paymentUrl) {
       paymentUrl.value = response.data.paymentUrl;
-      window.location.href = paymentUrl.value; // Redirect to the payment gateway
+      window.location.href = paymentUrl.value; // 
+    } else {
+      alert("No payment URL returned.");
     }
   } catch (error) {
     console.error("Payment error:", error);

@@ -45,63 +45,67 @@ export default {
     };
   },
   async mounted() {
-    this.storedUser = localStorage.getItem("user_id");
-    const transaction = sessionStorage.getItem("transaction");
-    this.transactiondata = JSON.parse(transaction);
-    const vendorCuisine = sessionStorage.getItem("cuisine");
-    const vendorName = sessionStorage.getItem("vendorname");
-    this.savedCart = JSON.parse(sessionStorage.getItem("cart") || "[]");
-    sessionStorage.clear();
+    try {
+      this.storedUser = localStorage.getItem("user_id");
 
-    const mappedCart = savedCart.map((item) => {
-      return {
+      const transaction = sessionStorage.getItem("transaction");
+      const parsedTransaction = transaction ? JSON.parse(transaction) : null;
+      if (!parsedTransaction) throw new Error("No transaction found");
+      this.transactiondata = parsedTransaction;
+
+      const vendorCuisine = sessionStorage.getItem("cuisine") || "";
+      const vendorName = sessionStorage.getItem("vendorname") || "";
+
+      const cart = sessionStorage.getItem("cart");
+      const parsedCart = cart ? JSON.parse(cart) : [];
+      this.savedCart = parsedCart;
+
+      sessionStorage.clear();
+
+      const mappedCart = parsedCart.map((item) => ({
         Id: item.ItemID,
         VendorID: item.VendorID,
         VendorName: vendorName,
         Cuisine: vendorCuisine,
         ImageURL: item.ImageURL,
-        OrderId: transactiondata.OrderID,
+        OrderId: parsedTransaction.OrderID,
+      }));
+
+      this.requestBody = {
+        UserOrdersAPI: {
+          UserID: this.storedUser,
+          OrderID: parsedTransaction.OrderID,
+          OrderDetails: mappedCart,
+        },
       };
-    });
 
-    this.requestBody = {
-      UserOrdersAPI: {
-        UserID: storedUser,
-        OrderID: transactiondata.OrderID,
-        OrderDetails: mappedCart,
-      },
-    };
-    this.orderRequestBody = {
-      UserID: storedUser,
-      TotalAmount: transactiondata.Amount,
-      TransactionID: transactiondata.TransactionID,
-    };
-
-    const cartitems = savedCart.map((item) => {
-      return {
+      const cartitems = parsedCart.map((item) => ({
         ItemID: item.ItemID,
         ItemName: item.ItemName,
         Quantity: 1,
         Price: item.Price,
         VendorID: item.VendorID,
+      }));
+
+      this.orderData = {
+        OrderID: parsedTransaction.OrderID,
+        UserID: this.storedUser,
+        TotalAmount: parsedTransaction.Amount || 0,
+        TransactionID: parsedTransaction.TransactionID,
+        VendorID: parsedCart.length > 0 ? parsedCart[0].VendorID : null,
+        VendorName: vendorName,
+        Cuisine: vendorCuisine,
+        ImageURL: parsedCart.length > 0 ? parsedCart[0].ImageURL : "",
+        Items: cartitems,
       };
-    });
 
-    this.orderData = {
-      OrderID: transactiondata.OrderID,
-      UserID: storedUser,
-      TotalAmount: transactiondata.Amount,
-      TransactionID: transactiondata.TransactionID,
-      VendorID: savedCart.length > 0 ? savedCart[0].VendorID : null,
-      VendorName: vendorName,
-      Cuisine: vendorCuisine,
-      ImageURL: savedCart.length > 0 ? savedCart[0].ImageURL : "",
-      Items: cartitems,
-    };
-    console.log(this.orderData);
+      console.log("Final Order Data:", this.orderData);
 
-    this.postOrderHistory();
-    this.postOrder();
+      await this.postOrderHistory();
+      await this.postOrder();
+    } catch (error) {
+      console.error("Error in mounted():", error);
+    }
   },
   methods: {
     async postOrderHistory() {
