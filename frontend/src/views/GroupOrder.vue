@@ -106,8 +106,17 @@
 
             <!-- Sticky Footer (Total & Payment Button) -->
             <div class="cart-footer">
-              <p class="fw-bold">Total: ${{ totalPrice }}</p>
-              <button class="btn btn-dark w-100">
+            <p class="fw-bold">Total: ${{ totalPrice }}</p>
+            <StripeCheckout
+              ref="checkoutRef"
+              mode="payment"
+              :pk="publishableKey"
+              :line-items="lineItems"
+              :success-url="successURL"
+              :cancel-url="cancelURL"
+              @loading="(v) => (loading = v)"
+            />
+              <button class="btn btn-dark w-100" @click="submitPayment">
                 Review Payment and Address
               </button>
             </div>
@@ -121,11 +130,29 @@
 <script>
 import axios from "axios";
 import { createClient } from "@supabase/supabase-js";
+import { ref, onMounted, computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
+// import axios from "axios";
+import { StripeCheckout } from "@vue-stripe/vue-stripe";
+
+
+const vendor = ref({});
+const menuItems = ref({});
+// const cart = ref([]);
+
+const loading = ref(false);
 
 const supabase = createClient(
   "https://ioskwqelrdcangizpzij.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlvc2t3cWVscmRjYW5naXpwemlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIwNTc0NTksImV4cCI6MjA1NzYzMzQ1OX0.Kpt-FzHu9yA7ilcCmSRYtPcHtjnei276B-uIZx_4cxc"
 );
+
+const publishableKey = ref(
+  "pk_test_51R2Nh0Bz8bLJBV2o8mzAgS2z1jPVz0RVXTsJLF2lcH6TNpbfiOWNDhqF5it1GN2KkT8n7NUqltpJU7uAx5yIPuyl00umDgnPUu"
+);
+const successURL = ref("http://localhost:8080/success");
+const cancelURL = ref("http://localhost:8080/cancel");
+
 
 export default {
   data() {
@@ -150,6 +177,17 @@ export default {
         .reduce((total, item) => total + item.Price * item.Quantity, 0)
         .toFixed(2);
     },
+    lineItems() {
+      return this.sharedCart.map((item) => ({
+        price_data: {
+          currency: "sgd",
+          product_data: { name: item.ItemName },
+          unit_amount: Math.round(item.Price * 100),
+        },
+        quantity: item.quantity || 1,
+      }));
+    },
+  
   },
   methods: {
     async fetchSharedCart() {
@@ -215,6 +253,40 @@ export default {
         console.error("Error fetching vendor or menu:", err);
       }
     },
+
+    async submitPayment() {
+    try {
+      const idResponse = await axios.get("http://localhost:5005/next-order-id");
+      const orderId = idResponse.data.OrderID;
+
+      const response = await axios.post(
+        "http://localhost:5005/payments",
+        {
+          OrderID: orderId,
+          Amount: this.totalPrice,
+        },
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      if (response.data.transaction) {
+        sessionStorage.setItem("transaction", JSON.stringify(response.data.transaction));
+        sessionStorage.setItem("cart", JSON.stringify(this.sharedCart));
+        sessionStorage.setItem("cuisine", this.vendor.Cuisine);
+        sessionStorage.setItem("vendorname", this.vendor.VendorName);
+      }
+
+      if (response.data.paymentUrl) {
+        window.location.href = response.data.paymentUrl;
+      } else {
+        alert("Error initiating payment.");
+      }
+    } catch (error) {
+      console.error("Payment error:", error.response?.data || error);
+      alert("Failed to initiate payment.");
+    }
+  },
 
     async addToSharedCart(item) {
       try {
@@ -296,6 +368,7 @@ export default {
     await this.fetchVendorFromCart();
     await this.fetchSharedCart();
     this.subscribeToRealtime();
+    this,vendorId = this.$route.params.id;
   },
   beforeUnmount() {
     if (this.channel) supabase.removeChannel(this.channel);
