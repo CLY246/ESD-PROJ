@@ -401,46 +401,47 @@ password = "bmvd eeqx hymq nsjs"  # Gmail App Password
 
 def send_order_email(body):
     try:
-        # Parse the incoming JSON message to get the order details
+        # Parse the incoming JSON message
         data = json.loads(body)
-        userID = "recipient@example.com"  # Replace this with the user's email from the data
-        print(f"Sending email to: {userID}")  # Debug line
+        user_email = data.get("UserEmail")  # Ensure this key is in the RabbitMQ message
 
-        # Create the email content
+        if not user_email:
+            print("❌ Error: Missing UserEmail in message!")
+            return False  # Don't proceed if email is missing
+
+        print(f"📧 Sending email to: {user_email}")
+
+        # Create email content
         message = MIMEMultipart("alternative")
         message["From"] = email
-        message["To"] = userID
+        message["To"] = user_email
         message["Subject"] = "Order Confirmation"
 
-        # HTML content of the email
-        text = """
-            Hi, <br />
-            <br />
-            Thank you for your order!
-            <br />
-            <br />
-            If you have any enquiries, please contact us by replying to this email.
-            <br />
-            <br />
-            Sincerely, <br /> 
-            ESDOrder Team
-            """
+        # Email body
+        text = f"""
+        Hi, <br /><br />
+        Thank you for your order! <br /><br />
+        Order ID: {data.get("OrderID")}<br />
+        Total Amount: ${data.get("TotalAmount", "N/A")}<br />
+        <br />
+        If you have any questions, please contact us. <br /><br />
+        Sincerely, <br />
+        ESDOrder Team
+        """
         html = MIMEText(text, "html")
         message.attach(html)
 
-        # Set up SSL context for secure connection
+        # Send email
         context = ssl.create_default_context()
         with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
-            print("Connecting to the email server...")  # Debug line
             server.login(email, password)
-            server.sendmail(email, userID, message.as_string())  # Send the email
+            server.sendmail(email, user_email, message.as_string())
 
-        print("Email sent to:", userID)
+        print("✅ Email sent successfully!")
         return True
 
     except Exception as e:
-        print("Error:", str(e))
-        traceback.print_exc()
+        print(f"❌ Email Sending Error: {e}")
         return False
 
 
