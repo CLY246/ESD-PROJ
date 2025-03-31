@@ -6,6 +6,7 @@ import Payment from '../views/Payment.vue';
 import Menu from '../views/Menu.vue';
 import GroupOrder from '../views/GroupOrder.vue';
 import Success from '@/views/Success.vue';
+import SplitPayment from '@/views/SplitPayment.vue';
 
 const routes = [
   { path: '/', component: Home },
@@ -15,6 +16,7 @@ const routes = [
   { path: '/menu/:id', component: Menu, props: true },
   { path: '/group-order/join/:cartId', component: GroupOrder },
   { path: '/success', component: Success },
+  { path: '/splitpayments', component: SplitPayment },
 
 ];
 

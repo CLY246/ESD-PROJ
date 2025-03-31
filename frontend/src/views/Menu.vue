@@ -235,8 +235,13 @@ const submitPayment = async () => {
       sessionStorage.setItem("cart", JSON.stringify(cart.value));
       sessionStorage.setItem('cuisine', vendor.value.Cuisine);
       sessionStorage.setItem('vendorname', vendor.value.VendorName);
+      sessionStorage.setItem('vendorid', vendor.value.VendorId);
+      sessionStorage.setItem("isGroupOrder", "false");
+      console.log("Transaction received:", response.data.transaction);
     }
     if (response.data.paymentUrl) {
+      
+
       window.location.href = response.data.paymentUrl; // Redirect to Stripe
     } else {
       alert("Error initiating payment.");

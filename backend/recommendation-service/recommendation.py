@@ -222,13 +222,13 @@ from flask_cors import CORS
 import requests
 import tensorflow as tf
 import numpy as np
-import psycopg2
 import os
 from flask_sqlalchemy import SQLAlchemy
 import traceback
 import requests
 import json
 import logging
+import pandas as pd
 
 app = Flask(__name__)
 app.config["DEBUG"] = True
@@ -253,17 +253,26 @@ db = SQLAlchemy(app)
 #     cuisine = db.Column(db.String(255), nullable=False)
 #     image_url = db.Column(db.String(255), nullable=True)
 # 🔹 Load TensorFlow model
-MODEL_PATH = "model/recommendation_model.h5"
-model = tf.keras.models.load_model(MODEL_PATH)
 
-with open("model/cuisine_columns.json", "r") as f:
-    CUISINE_COLUMNS = json.load(f)
+def recommend_top_cuisines(user_history_df, model_path="model/user_cuisine_model.h5", top_k=2):
+    model = tf.keras.models.load_model(model_path)
 
-with open("model/vendor_columns.json", "r") as f:
-    VENDOR_COLUMNS = json.load(f)
+    # Load column structure
+    with open("model/user_cuisine_columns.json") as f:
+        cuisine_columns = json.load(f)
 
-# 🔹 Cuisine categories used during training
-CUISINE_TYPES = ["Japanese", "Korean", "Western", "Chinese", "Thai", "Indian"]
+    # Build feature row
+    user_input = pd.Series(0, index=cuisine_columns, dtype="float32")
+    for cuisine in user_history_df["Cuisine"]:
+        if cuisine in user_input.index:
+            user_input[cuisine] += 1
+
+    # Predict top cuisines
+    preds = model.predict(np.array([user_input]))[0]
+    top_indices = preds.argsort()[-top_k:][::-1]
+    top_cuisines = [cuisine_columns[i] for i in top_indices]
+
+    return top_cuisines
 
 class Vendor(db.Model):
     __tablename__ = "vendors"
@@ -283,28 +292,12 @@ def recommendations():
             return jsonify({"error": "OrderHistory data is required"}), 400
 
         order_history = data['OrderHistory']
+        user_history_df = pd.DataFrame(order_history)
 
-        # Step 1: Count cuisines (use correct key: "Cuisine")
-        cuisines_ordered = [order["Cuisine"] for order in order_history]
-
-        # Step 2: Build feature vector from cuisine_columns
-        cuisine_counts = {cuisine: cuisines_ordered.count(cuisine) for cuisine in CUISINE_COLUMNS}
-        feature_vector = [cuisine_counts.get(col, 0) for col in CUISINE_COLUMNS]
-
-        # Step 3: Predict
-        prediction = model.predict(np.array([feature_vector]))[0]
-        top_indices = np.argsort(prediction)[-2:][::-1]
-        # top_vendor_ids = [str(order["VendorID"]) for order in order_history[:1]]
-        top_cuisines = [CUISINE_COLUMNS[i] for i in top_indices]
-        # top_cuisines = ['Western'] 
-        # top_vendor_ids = [VENDOR_COLUMNS[i] for i in top_indices]
+        top_cuisines = recommend_top_cuisines(user_history_df, model_path="model/user_cuisine_model.h5", top_k=2)
         print("Top predicted cuisines:", top_cuisines)
-        logging.info(f" Top predicted cuisines: {top_cuisines}")
+        logging.info(f"Top predicted cuisines: {top_cuisines}")
 
-        # Step 4: Filter orders for top vendor matches
-        seen = set()
-        recommended_vendors = []
-        
         vendors = Vendor.query.filter(Vendor.Cuisine.in_(top_cuisines)).limit(5).all()
 
         recommended_vendors = [{
@@ -313,12 +306,13 @@ def recommendations():
             "Cuisine": vendor.Cuisine,
             "ImageURL": vendor.ImageURL
         } for vendor in vendors]
+
         return jsonify({"recommended": recommended_vendors})
 
     except Exception as e:
-        import traceback
         traceback.print_exc()
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
+
 
 
 # @app.route("/recommend/orderhistory", methods=["POST"])

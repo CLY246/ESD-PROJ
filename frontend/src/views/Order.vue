@@ -69,8 +69,10 @@ export default {
     const storedUser = localStorage.getItem("token");
     if (storedUser) {
       this.userLoggedIn = true;
+      const decoded = jwtDecode(storedUser);
+      const userID = decoded.UserID || decoded.user_id || decoded.sub;
       this.fetchVendors();
-      this.fetchAndProcessOrderHistory();
+      this.fetchAndProcessOrderHistory(userID);
     }
   },
   methods: {
@@ -84,9 +86,9 @@ export default {
       }
     },
 
-    async fetchAndProcessOrderHistory() {
+    async fetchAndProcessOrderHistory(userID) {
       try {
-        const orderHistoryResponse = await fetch("https://personal-aefq3pkb.outsystemscloud.com/OrderManagement/rest/OrderHistory/getHistory/1002");
+        const orderHistoryResponse = await fetch(`https://personal-aefq3pkb.outsystemscloud.com/OrderManagement/rest/OrderHistory/getHistory/${userID}`);
         if (!orderHistoryResponse.ok) throw new Error("Failed to fetch order history");
 
         const orderHistoryData = await orderHistoryResponse.json();

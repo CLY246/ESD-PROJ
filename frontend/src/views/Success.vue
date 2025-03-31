@@ -31,6 +31,12 @@
         </tr>
       </tfoot>
     </table>
+      <div v-if="isGroupOrder" class="split-payment-option">
+    <p>This was a group order. Want to see how the bill is split?</p>
+    <RouterLink :to="'/splitpayments'" class="splitbtn">
+      View Split Payment
+    </RouterLink>
+    </div>
     <RouterLink :to="'/'" class="backbtn">Return to Main Page</RouterLink>
   </div>
 </template>
@@ -42,15 +48,18 @@ export default {
       transactiondata: null,
       savedCart: [],
       storedUser: "",
+      isGroupOrder: false,
     };
   },
   async mounted() {
     try {
       this.storedUser = localStorage.getItem("user_id");
+      this.isGroupOrder = sessionStorage.getItem("isGroupOrder") === "true";
+ 
 
       const transaction = sessionStorage.getItem("transaction");
       const parsedTransaction = transaction ? JSON.parse(transaction) : null;
-      if (!parsedTransaction) throw new Error("No transaction found");
+      if (!parsedTransaction) throw new Error("No transaction found"); // 🔥 triggers error
       this.transactiondata = parsedTransaction;
 
       const vendorCuisine = sessionStorage.getItem("cuisine") || "";
@@ -60,7 +69,6 @@ export default {
       const parsedCart = cart ? JSON.parse(cart) : [];
       this.savedCart = parsedCart;
 
-      sessionStorage.clear();
 
       const mappedCart = parsedCart.map((item) => ({
         Id: item.ItemID,
@@ -103,6 +111,8 @@ export default {
 
       await this.postOrderHistory();
       await this.postOrder();
+
+      setTimeout(() => sessionStorage.clear(), 5000);
     } catch (error) {
       console.error("Error in mounted():", error);
     }

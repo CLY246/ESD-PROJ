@@ -243,7 +243,8 @@ export default {
           `http://localhost:8000/group-order/${this.cartId}/vendor`
         );
         const vendorId = res.data.vendorId;
-        this.vendor = res.data;
+        const vendorRes = await axios.get(`http://localhost:8000/vendors/${vendorId}`);
+        this.vendor = vendorRes.data;   
 
         const menuRes = await axios.get(
           `http://localhost:8000/menu/${vendorId}`
@@ -275,9 +276,13 @@ export default {
         sessionStorage.setItem("cart", JSON.stringify(this.sharedCart));
         sessionStorage.setItem("cuisine", this.vendor.Cuisine);
         sessionStorage.setItem("vendorname", this.vendor.VendorName);
+        sessionStorage.setItem('vendorid', this.vendor.VendorID);
+        sessionStorage.setItem("isGroupOrder", "true");
+
       }
 
       if (response.data.paymentUrl) {
+        
         window.location.href = response.data.paymentUrl;
       } else {
         alert("Error initiating payment.");
