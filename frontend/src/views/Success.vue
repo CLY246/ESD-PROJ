@@ -26,17 +26,12 @@
         <tr>
           <td><strong>TOTAL</strong></td>
           <td>
-            <strong>${{ transactiondata.Amount }}</strong>
+            <strong v-if="transactiondata">${{ transactiondata.Amount }}</strong>
+            <strong v-else>$0.00</strong>
           </td>
         </tr>
       </tfoot>
     </table>
-      <div v-if="isGroupOrder" class="split-payment-option">
-    <p>This was a group order. Want to see how the bill is split?</p>
-    <RouterLink :to="'/splitpayments'" class="splitbtn">
-      View Split Payment
-    </RouterLink>
-    </div>
     <RouterLink :to="'/'" class="backbtn">Return to Main Page</RouterLink>
   </div>
 </template>
@@ -45,21 +40,32 @@
 export default {
   data() {
     return {
-      transactiondata: null,
+      transactiondata: {
+        Amount: 0,
+        OrderID: null,
+        TransactionID: null
+      },
       savedCart: [],
       storedUser: "",
-      isGroupOrder: false,
     };
   },
+
   async mounted() {
     try {
-      this.storedUser = localStorage.getItem("user_id");
-      this.isGroupOrder = sessionStorage.getItem("isGroupOrder") === "true";
- 
+      this.storedUser = sessionStorage.getItem("user_id") || localStorage.getItem("user_id");
+      console.log("👤 UserID from sessionStorage:", this.storedUser);
 
+      // ✅ 1. Read and parse once
       const transaction = sessionStorage.getItem("transaction");
       const parsedTransaction = transaction ? JSON.parse(transaction) : null;
-      if (!parsedTransaction) throw new Error("No transaction found"); // 🔥 triggers error
+      console.log("💳 Raw transaction from sessionStorage:", parsedTransaction);
+
+      if (!parsedTransaction || !parsedTransaction.Amount || !parsedTransaction.TransactionID) {
+        throw new Error("Missing or invalid transaction data");
+      }
+
+      // ✅ 2. Use parsed object instead of accessing sessionStorage again
+      const amount = parseFloat(parsedTransaction.Amount) || 0;
       this.transactiondata = parsedTransaction;
 
       const vendorCuisine = sessionStorage.getItem("cuisine") || "";
@@ -68,7 +74,6 @@ export default {
       const cart = sessionStorage.getItem("cart");
       const parsedCart = cart ? JSON.parse(cart) : [];
       this.savedCart = parsedCart;
-
 
       const mappedCart = parsedCart.map((item) => ({
         Id: item.ItemID,
@@ -88,38 +93,43 @@ export default {
       };
 
       const cartitems = parsedCart.map((item) => ({
-        ItemID: item.ItemID,
+        ItemID: parseInt(item.ItemID),
         ItemName: item.ItemName,
-        Quantity: 1,
-        Price: item.Price,
-        VendorID: item.VendorID,
+        Quantity: parseInt(item.quantity) || 1,
+        Price: parseFloat(item.Price) || 0,
+        VendorID: parseInt(item.VendorID),
       }));
 
       this.orderData = {
         OrderID: parsedTransaction.OrderID,
         UserID: this.storedUser,
-        TotalAmount: parsedTransaction.Amount || 0,
+        TotalAmount: amount,
         TransactionID: parsedTransaction.TransactionID,
-        VendorID: parsedCart.length > 0 ? parsedCart[0].VendorID : null,
+        VendorID: parsedCart.length > 0 ? parseInt(parsedCart[0].VendorID) : null,
         VendorName: vendorName,
         Cuisine: vendorCuisine,
         ImageURL: parsedCart.length > 0 ? parsedCart[0].ImageURL : "",
         Items: cartitems,
       };
 
-      console.log("Final Order Data:", this.orderData);
+      console.log("🧾 Final orderData payload:", JSON.stringify(this.orderData, null, 2));
 
+      // ✅ 4. Post everything
       await this.postOrderHistory();
       await this.postOrder();
 
-      setTimeout(() => sessionStorage.clear(), 5000);
+      // ✅ 5. Clear storage AFTER use
+      sessionStorage.clear();
+
     } catch (error) {
-      console.error("Error in mounted():", error);
+      console.error("❌ Error in mounted():", error);
     }
-  },
+  }
+  ,
   methods: {
     async postOrderHistory() {
       try {
+        console.log("📨 Posting order history:", this.requestBody);
         const response = await fetch(
           "https://personal-aefq3pkb.outsystemscloud.com/OrderManagement/rest/OrderHistory/createHistory",
           {
@@ -132,19 +142,18 @@ export default {
         );
 
         if (!response.ok) {
-          throw new Error(
-            `Server error: ${response.status} ${response.statusText}`
-          );
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
-        console.log("Order history created successfully:", data);
+        console.log("📦 Order history created successfully:", data);
       } catch (error) {
-        console.error("Error posting order history:", error);
+        console.error("❌ Error posting order history:", error);
       }
     },
     async postOrder() {
       try {
+        console.log("📤 Posting order to /orders:", this.orderData);
         const response = await fetch("http://localhost:5003/orders", {
           method: "POST",
           headers: {
@@ -152,20 +161,23 @@ export default {
           },
           body: JSON.stringify(this.orderData),
         });
+
         if (!response.ok) {
-          throw new Error(
-            `Server error: ${response.status} ${response.statusText}`
-          );
+          const errText = await response.text();
+          throw new Error(`Server error: ${response.status} ${response.statusText} → ${errText}`);
         }
+
         const data = await response.json();
-        console.log("Order created successfully:", data);
+        console.log("✅ Order created successfully:", data);
       } catch (error) {
-        console.error("Error creating order:", error);
+        console.error("❌ Error creating order:", error);
       }
     },
   },
 };
 </script>
+
+
 
 <style scoped>
 .success-container {

@@ -77,14 +77,28 @@ def processPlaceOrder(order):
 
     # Step 1: Get vendor info
     vendor_info = get_vendor_info(order["VendorID"])
+    print("🔍 Vendor info received:", vendor_info)  # ✅ Add this here
+
     if not vendor_info:
         return {"code": 404, "message": "❌ Vendor not found"}
-    print("📦 Vendor info:", vendor_info)
+
 
     # Step 2: Build payment payload and call payment service first
+    print("📨 Incoming order payload:", order)
+
+    total_amount = order.get("TotalAmount")
+    if total_amount is None:
+        return {
+            "code": 400,
+            "message": "❌ Missing 'TotalAmount' in order payload",
+            "data": order
+        }
+
     payment_payload = {
-        "Amount": order["TotalAmount"]
+        "Amount": total_amount
     }
+
+    print("💳 Sending payment payload:", payment_payload)
 
     payment_result = invoke_http(PAYMENT_URL, method="POST", json=payment_payload)
     print("🧾 Payment response:", payment_result)
@@ -96,25 +110,32 @@ def processPlaceOrder(order):
             "data": payment_result
         }
 
-    # ✅ Ensure 'transaction' is inside payment_result["data"]
+    # ✅ Ensure 'transaction' is present
     transaction_data = payment_result.get("data", {}).get("transaction")
-
-    order_id = transaction_data.get("OrderID")
-
     if not transaction_data:
         return {
-        "code": 500,
-        "message": "❌ OrderID not found in payment response",
-        "data": payment_result
+            "code": 500,
+            "message": "❌ Transaction data missing from payment response",
+            "data": payment_result
         }
 
+    order_id = transaction_data.get("OrderID")
     transaction_id = transaction_data.get("TransactionID")
+
+    if not order_id:
+        return {
+            "code": 500,
+            "message": "❌ OrderID not found in transaction data",
+            "data": transaction_data
+        }
+
     if not transaction_id:
         return {
             "code": 500,
-            "message": "❌ TransactionID not found in payment response",
-            "data": payment_result
+            "message": "❌ TransactionID not found in transaction data",
+            "data": transaction_data
         }
+
 
     # Step 3: Build payload for OrderManagement (now includes TransactionID)
     order_payload = {
@@ -123,8 +144,8 @@ def processPlaceOrder(order):
         "TotalAmount": order["TotalAmount"],
         "TransactionID": transaction_id,  # ✅ now included
         "VendorID": vendor_info["VendorID"],
-        "VendorName": vendor_info["VendorName"],
-        "Cuisine": vendor_info["Cuisine"],
+        "VendorName": vendor_info.get("VendorName", "Unknown"),
+        "Cuisine": vendor_info.get("Cuisine", "Unknown"),
         "ImageURL": vendor_info["ImageURL"],
         "OrderItems": order["OrderItems"]
     }
@@ -187,8 +208,11 @@ def processPlaceOrder(order):
         "message": "✅ Order and payment initiated",
         "paymentUrl": payment_result.get("paymentUrl"),
         "orderId": new_order_id,
-        "transaction": transaction_data
+        "transaction": transaction_data,
+        "order": order_result.get("data", {}).get("Order"),
+        "items": order_result.get("data", {}).get("Items")
     }
+
 
 
 if __name__ == "__main__":

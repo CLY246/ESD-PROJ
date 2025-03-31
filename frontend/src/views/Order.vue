@@ -149,20 +149,34 @@ export default {
         return alert("Invalid user token.");
       }
 
-      const vendorId = this.cart[0].VendorID;
-      const totalAmount = this.cart.reduce((sum, item) => sum + item.Price * item.quantity, 0);
+      const firstItem = this.cart[0];
+      if (!firstItem || !firstItem.VendorID) {
+        return alert("Vendor information is missing from cart items.");
+      }
+
+      const vendorId = firstItem.VendorID;
+
+      const totalAmount = this.cart.reduce((sum, item) => {
+        const qty = item.quantity ?? 1;
+        const price = parseFloat(item.Price) || 0; // ✅ convert to number safely
+        return sum + price * qty;
+      }, 0);
 
       const orderPayload = {
         UserID: userID,
-        VendorID: vendorId,
+        VendorID: parseInt(vendorId),
         TotalAmount: totalAmount,
-        OrderItems: this.cart.map(item => ({
-          ItemID: item.ItemID,
-          ItemName: item.ItemName,
-          Quantity: item.quantity,
-          Price: item.Price
-        }))
+        OrderItems: this.cart
+          .filter(item => item.ItemID && item.Price !== undefined)
+          .map(item => ({
+            ItemID: parseInt(item.ItemID),
+            ItemName: item.ItemName ?? "Unnamed Item",
+            Quantity: parseInt(item.quantity) || 1,
+            Price: parseFloat(item.Price) || 0
+          }))
       };
+
+      console.log("🧾 Final orderPayload:", JSON.stringify(orderPayload, null, 2));
 
       try {
         const response = await fetch("http://localhost:8000/place_order", {
@@ -175,13 +189,15 @@ export default {
         });
 
         const data = await response.json();
-        console.log("Stripe full response:", JSON.stringify(data, null, 2));
+        console.log("💳 Stripe full response:", JSON.stringify(data, null, 2));
+        console.log("📦 Final Order Data:", data.order);
+        console.log("📦 Final Order Items:", data.items);
 
-        const paymentUrl = data?.paymentUrl 
+        const paymentUrl = data?.paymentUrl;
 
         if (response.ok && typeof paymentUrl === "string") {
           this.cart = [];
-          window.location.href = paymentUrl; 
+          window.location.href = paymentUrl;
         } else {
           console.error("Invalid paymentUrl or response format:", data);
           alert("Order failed: " + (data?.message || "Unknown error"));
@@ -191,6 +207,7 @@ export default {
         alert("Could not place order.");
       }
     }
+
 
   }
 };

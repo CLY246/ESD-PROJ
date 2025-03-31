@@ -155,60 +155,57 @@ def place_order():
     try:
         data = request.json
         user_id = data.get("UserID")
+        order_id = data.get("OrderID")
         total_amount = data.get("TotalAmount")
         transaction_id = data.get("TransactionID")
+        vendor_id = data.get("VendorID")
 
         if not user_id or not total_amount or not transaction_id:
             return jsonify({"message": "Missing data"}), 400
 
-        # Step 1: Create Order
+        # ✅ Step 1: Save main order
         new_order = Order(
-            OrderID = data.get("OrderID"),
+            OrderID=order_id,
             UserID=user_id,
             TotalAmount=total_amount,
             TransactionID=transaction_id,
-            VendorID=data.get("VendorID"),
+            VendorID=vendor_id,
             VendorName=data.get("VendorName"),
             Cuisine=data.get("Cuisine"),
             ImageURL=data.get("ImageURL")
         )
         db.session.add(new_order)
-        db.session.commit()
 
-        # Step 2: Add Items if present
-        for item in data.get("OrderItems", []):
+        # ✅ Step 2: Save order items
+        items = data.get("Items", [])
+        print("📦 Incoming Items:", items)
+        for item in items:
             order_item = OrderItem(
-                OrderID=new_order.OrderID,
-                ItemID=item["ItemID"],
-                ItemName=item.get("ItemName"),
-                Quantity=item["Quantity"],
-                Price=item["Price"],
-                VendorID=data.get("VendorID")
+                OrderID=order_id,
+                ItemID=item.get("ItemID"),
+                ItemName=item.get("ItemName", "Unnamed Item"),
+                Quantity=item.get("Quantity", 1),
+                Price=item.get("Price", 0.0),
+                VendorID=item.get("VendorID")
             )
             db.session.add(order_item)
 
         db.session.commit()
 
-        items = OrderItem.query.filter_by(OrderID=new_order.OrderID).all()
-
         return jsonify({
             "code": 201,
-            "message": "✅ Order placed successfully",
-            "data": {
-                "Order": new_order.json(),
-                "Items": [item.json() for item in items]
-            }
+            "message": "✅ Order and items saved"
         }), 201
 
     except Exception as e:
-        print("❌ Exception in /orders:")
+        db.session.rollback()
+        import traceback
         traceback.print_exc()
         return jsonify({
             "code": 500,
-            "message": "Internal error in /orders",
+            "message": "❌ Failed to save order",
             "error": str(e)
         }), 500
-
 
 
 
