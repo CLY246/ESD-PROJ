@@ -32,6 +32,12 @@
         </tr>
       </tfoot>
     </table>
+    <div v-if="isGroupOrder" class="split-payment-option">
+    <p>This was a group order. Want to see how the bill is split?</p>
+    <RouterLink :to="'/splitpayments'" class="splitbtn">
+      View Split Payment
+    </RouterLink>
+    </div>
     <RouterLink :to="'/'" class="backbtn">Return to Main Page</RouterLink>
   </div>
 </template>
@@ -47,12 +53,15 @@ export default {
       },
       savedCart: [],
       storedUser: "",
+      isGroupOrder: false,
     };
   },
 
   async mounted() {
     try {
-      this.storedUser = sessionStorage.getItem("user_id") || localStorage.getItem("user_id");
+      this.storedUser = localStorage.getItem("user_id");
+      // this.storedUser = sessionStorage.getItem("user_id") || "";
+      this.isGroupOrder = sessionStorage.getItem("isGroupOrder") === "true";
       console.log("👤 UserID from sessionStorage:", this.storedUser);
 
       // ✅ 1. Read and parse once
@@ -119,7 +128,7 @@ export default {
       await this.postOrder();
 
       // ✅ 5. Clear storage AFTER use
-      sessionStorage.clear();
+      setTimeout(() => sessionStorage.clear(), 5000);
 
     } catch (error) {
       console.error("❌ Error in mounted():", error);

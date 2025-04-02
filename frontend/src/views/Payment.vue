@@ -8,14 +8,20 @@ const amount = ref(0);
 const paymentUrl = ref("");
 
 // 👇 Assume these are passed or available
-const cart = JSON.parse(localStorage.getItem("cart")) || [];
-const userID = localStorage.getItem("user_id") || "";
-const vendorName = localStorage.getItem("vendorname") || "";
-const cuisine = localStorage.getItem("cuisine") || "";
+const cart = JSON.parse(sessionStorage.getItem("cart")) || [];
+const userID = sessionStorage.getItem("user_id") || "";
+const vendorName = sessionStorage.getItem("vendorname") || "";
+const cuisine = sessionStorage.getItem("cuisine") || "";
+
 
 const createPayment = async () => {
   try {
     // ✅ Auto-calculate total
+    if (!cart.length) {
+  alert("Your cart is empty.");
+  return;
+}
+
     amount.value = cart.reduce((sum, item) => {
       const price = parseFloat(item.Price) || 0;
       const qty = parseInt(item.quantity) || 1;
@@ -50,6 +56,8 @@ const createPayment = async () => {
       sessionStorage.setItem("user_id", userID);
       sessionStorage.setItem("vendorname", vendorName);
       sessionStorage.setItem("cuisine", cuisine);
+      sessionStorage.setItem("isGroupOrder", "true");
+
 
       paymentUrl.value = response.data.paymentUrl;
       window.location.href = paymentUrl.value;
