@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from datetime import datetime
 import os
+import uuid
 import stripe
 from sqlalchemy import BigInteger
 from sqlalchemy import text
@@ -74,6 +75,8 @@ endpoint_secret = os.getenv("whsec_119db3c043f993227277345c6a1fbc9d49d1898b2e8bd
 
 
 
+
+
 @app.route("/payments", methods=["GET"])
 def get_all_transactions():
     transactions = Transaction.query.all()
@@ -97,6 +100,7 @@ def process_payment():
         # Step 2: Convert amount to cents for Stripe
         amount_in_cents = int(float(amount) * 100)
 
+
         # Step 3: Create Stripe session
         session = stripe.checkout.Session.create(
             payment_method_types=["card"],
@@ -114,6 +118,7 @@ def process_payment():
             metadata={"order_id": str(order_id)}
         )
 
+     
         # Step 4: Save transaction to DB
         new_transaction = Transaction(
             OrderID=order_id,
@@ -121,9 +126,9 @@ def process_payment():
             PaymentMethod="Stripe",
             PaymentStatus="Pending"  # straight completion
         )
+
         db.session.add(new_transaction)
         db.session.commit()
-
 
         # ✅ Step 5: Return Stripe session URL
         return jsonify({
@@ -138,11 +143,7 @@ def process_payment():
             "message": "Payment processing failed",
             "transaction": None
         }), 500
-    
 
-    
-
-        
 
 @app.route('/webhook', methods=['POST'])
 def stripe_webhook():
@@ -164,13 +165,12 @@ def stripe_webhook():
         print("✅ Payment success:", session)
 
         # Update your DB to mark transaction as "Success"
-        order_id = session.get("metadata", {}).get("order_id")
+        order_id = session.get("metadata", {}).get("order_id")  # if using metadata
         if order_id:
             transaction = Transaction.query.filter_by(OrderID=order_id).first()
             if transaction:
                 transaction.PaymentStatus = "Success"
                 db.session.commit()
-                print(f"✅ Transaction {transaction.TransactionID} updated to 'Success'")
 
     return jsonify({"status": "received"}), 200
 

@@ -158,8 +158,17 @@ services:
         methods: ["GET"]
         strip_path: false
 
+
+      - name: stripe-webhook
+        paths: ["/webhook"]
+        methods: ["POST", "OPTIONS"]
+        strip_path: false
+
+
+
   - name: placeanorder-service
-    url: http://placeanorder-service:5000
+    url: http://placeanorder-service:5000  # 👈 your backend runs on port 5000
+
     plugins:
       - name: cors
         config:
@@ -168,6 +177,7 @@ services:
           methods:
             - POST
             - OPTIONS
+            - GET
           headers:
             - Content-Type
             - Authorization
@@ -178,6 +188,28 @@ services:
         paths: ["/place_order"]
         methods: ["POST", "OPTIONS"]
         strip_path: false
+
+      - name: vendors-proxy
+        paths: ["/vendors"]
+        methods: ["GET", "OPTIONS"]
+        strip_path: false
+
+
+      - name: trigger-ordermanagement
+        paths: ["/trigger_ordermanagement"]
+        methods: ["POST", "OPTIONS"]
+        strip_path: false
+
+      - name: trigger-amqp
+        paths: ["/trigger_amqp"]
+        methods: ["POST", "OPTIONS"]
+        strip_path: false
+
+      - name: trigger-payment   # ✅ Add this!
+        paths: ["/trigger_payment"]
+        methods: ["POST", "OPTIONS"]
+        strip_path: false
+
 
 
 

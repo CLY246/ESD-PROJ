@@ -65,6 +65,7 @@ export default {
       cart: []
     };
   },
+
   async mounted() {
     const storedUser = localStorage.getItem("token");
     if (storedUser) {
@@ -75,6 +76,7 @@ export default {
       this.fetchAndProcessOrderHistory(userID);
     }
   },
+
   methods: {
     async fetchVendors() {
       try {
@@ -93,7 +95,6 @@ export default {
 
         const orderHistoryData = await orderHistoryResponse.json();
         const details = orderHistoryData.UserOrdersAPI.OrderDetails;
-        console.log(details);
 
         if (Array.isArray(details)) {
           const recommendationsResponse = await fetch("http://localhost:5013/test", {
@@ -117,9 +118,9 @@ export default {
 
     addToCart(item) {
       try {
-        console.log("🛒 Adding item:", JSON.stringify(item)); // ✅ safely stringify
+        console.log("🛒 Adding item:", JSON.stringify(item));
       } catch (e) {
-        console.log("🛒 Adding item (raw):", item); // fallback
+        console.log("🛒 Adding item (raw):", item);
       }
 
       const existingItem = this.cart.find(cartItem => cartItem.ItemID === item.ItemID);
@@ -128,8 +129,7 @@ export default {
       } else {
         this.cart.push({ ...item, quantity: 1 });
       }
-    }
-,
+    },
 
     removeFromCart(item) {
       this.cart = this.cart.filter(cartItem => cartItem.ItemID !== item.ItemID);
@@ -144,10 +144,18 @@ export default {
       let userID;
       try {
         const decoded = jwtDecode(token);
+        console.log("🚨 Decoded JWT token:", decoded);
         userID = decoded.UserID || decoded.user_id || decoded.sub;
-      } catch {
-        return alert("Invalid user token.");
+
+        if (!userID) throw new Error("userID not present in token");
+      } catch (error) {
+        console.error("❌ JWT decoding failed:", error);
+        alert("Invalid or expired user session. Please log in again.");
+        return;
       }
+
+      localStorage.setItem("user_id", userID); // ✅ Now using localStorage
+      console.log("✅ Saved userID to localStorage:", userID);
 
       const firstItem = this.cart[0];
       if (!firstItem || !firstItem.VendorID) {
@@ -155,10 +163,12 @@ export default {
       }
 
       const vendorId = firstItem.VendorID;
+      const vendorName = firstItem.VendorName ?? "Vendor";
+      const cuisine = firstItem.Cuisine ?? "Unknown";
 
       const totalAmount = this.cart.reduce((sum, item) => {
         const qty = item.quantity ?? 1;
-        const price = parseFloat(item.Price) || 0; // ✅ convert to number safely
+        const price = parseFloat(item.Price) || 0;
         return sum + price * qty;
       }, 0);
 
@@ -176,10 +186,10 @@ export default {
           }))
       };
 
-      console.log("🧾 Final orderPayload:", JSON.stringify(orderPayload, null, 2));
+      console.log("🚀 Sending order payload to trigger_payment:", orderPayload);
 
       try {
-        const response = await fetch("http://localhost:8000/place_order", {
+        const response = await fetch("http://localhost:8000/trigger_payment", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -189,29 +199,45 @@ export default {
         });
 
         const data = await response.json();
-        console.log("💳 Stripe full response:", JSON.stringify(data, null, 2));
-        console.log("📦 Final Order Data:", data.order);
-        console.log("📦 Final Order Items:", data.items);
+        console.log("💳 Payment trigger response:", data);
 
         const paymentUrl = data?.paymentUrl;
 
         if (response.ok && typeof paymentUrl === "string") {
-          this.cart = [];
+          sessionStorage.setItem("cart", JSON.stringify(this.cart));
+          sessionStorage.setItem("vendorname", vendorName);
+          sessionStorage.setItem("cuisine", cuisine);
+          sessionStorage.setItem("isGroupOrder", "true");
+
+          sessionStorage.setItem("transaction", JSON.stringify({
+            Amount: totalAmount,
+            OrderID: data.OrderID,
+            TransactionID: data.TransactionID,
+            paymentUrl: paymentUrl,
+          }));
+
+          console.log("🚨 DEBUG: Storage data before payment redirect:", {
+            user_id: userID,
+            vendorname: vendorName,
+            cuisine: cuisine,
+            cart: this.cart
+          });
+
           window.location.href = paymentUrl;
         } else {
-          console.error("Invalid paymentUrl or response format:", data);
-          alert("Order failed: " + (data?.message || "Unknown error"));
+          console.error("Payment failed or invalid Stripe URL:", data);
+          alert("Payment failed: " + (data.message || data.error || "Unknown error"));
         }
       } catch (error) {
-        console.error("Order placement failed:", error);
-        alert("Could not place order.");
+        console.error("Payment request failed:", error);
+        alert("Could not initiate payment.");
       }
     }
-
 
   }
 };
 </script>
+
 
 <style scoped>
 @media (min-width: 1600px) {

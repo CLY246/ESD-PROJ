@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import pika
+import requests
 
 # Add the root path to Python so it can find rabbitmq/
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -19,8 +20,8 @@ CORS(app)
 
 # placeanorder.py
 VENDOR_URL = "http://vendor-service:5000/vendors"    # stays the same
-PAYMENT_URL = "http://localhost:8000/payments"
-ORDER_URL   = "http://localhost:8000/orders"
+PAYMENT_URL = "http://payment-service:5000/payments"
+ORDER_URL   = "http://ordermanagement-service:5000/orders"
 
 
 
@@ -42,27 +43,78 @@ def rabbitmq_health():
 
 
 
+@app.route("/vendors", methods=["GET"])
+def fetch_vendors_from_vendor_service():
+    try:
+        response = requests.get("http://vendor-service:5000/vendors")
+        vendors = response.json()
+        print("📡 Vendors fetched via placeanorder-service")
+        return jsonify({
+            "source": "placeanorder",
+            "vendors": vendors
+        }), response.status_code
+    except Exception as e:
+        return jsonify({"message": "Failed to fetch vendors", "error": str(e)}), 500
 
 
-@app.route("/place_order", methods=["POST"])
-def place_order():
-    if request.is_json:
-        try:
-            order = request.get_json()
-            print("\n📦 Received an order in JSON:", order)
+@app.route("/trigger_payment", methods=["POST"])
+def handle_trigger_payment():
+    order = request.get_json()
+    result = trigger_payment(order)
+    return jsonify(result), result.get("code", 500)
 
-            result = processPlaceOrder(order)
-            return jsonify(result), result["code"]
 
-        except Exception as e:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            ex_str = str(e) + f" at {exc_type}: {fname}: line {exc_tb.tb_lineno}"
-            print(f"❌ Error: {ex_str}")
+@app.route("/trigger_ordermanagement", methods=["POST"])
+def handle_trigger_ordermanagement():
+    data = request.get_json()
+    order = data.get("order")
+    transaction_data = data.get("transaction_data")
+    vendor_info = data.get("vendor_info")
 
-            return jsonify({"code": 500, "message": "place_order.py internal error", "exception": ex_str}), 500
+    if not all([order, transaction_data, vendor_info]):
+        return jsonify({"code": 400, "message": "Missing required fields"}), 400
 
-    return jsonify({"code": 400, "message": "Invalid JSON input"}), 400
+    result = trigger_ordermanagement(order, transaction_data, vendor_info)
+    return jsonify(result), result.get("code", 500)
+
+
+@app.route("/trigger_amqp", methods=["POST"])
+def handle_trigger_amqp():
+    data = request.get_json()
+    order_result = data.get("order_result")
+    order = data.get("order")
+    new_order_id = data.get("new_order_id")
+
+    if not all([order_result, order, new_order_id]):
+        return jsonify({"code": 400, "message": "Missing required fields"}), 400
+
+    try:
+        trigger_amqp(order_result, order, new_order_id)
+        return jsonify({"code": 200, "message": "AMQP notifications sent"}), 200
+    except Exception as e:
+        return jsonify({"code": 500, "message": str(e)}), 500
+
+
+
+# @app.route("/place_order", methods=["POST"])
+# def place_order():
+#     if request.is_json:
+#         try:
+#             order = request.get_json()
+#             print("\n📦 Received an order in JSON:", order)
+
+#             result = processPlaceOrder(order)
+#             return jsonify(result), result["code"]
+
+#         except Exception as e:
+#             exc_type, exc_obj, exc_tb = sys.exc_info()
+#             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+#             ex_str = str(e) + f" at {exc_type}: {fname}: line {exc_tb.tb_lineno}"
+#             print(f"❌ Error: {ex_str}")
+
+#             return jsonify({"code": 500, "message": "place_order.py internal error", "exception": ex_str}), 500
+
+#     return jsonify({"code": 400, "message": "Invalid JSON input"}), 400
 
 
 def get_vendor_info(vendor_id):
@@ -72,20 +124,8 @@ def get_vendor_info(vendor_id):
     return None
 
 
-def processPlaceOrder(order):
-    print("📦 Starting order placement process...")
 
-    # Step 1: Get vendor info
-    vendor_info = get_vendor_info(order["VendorID"])
-    print("🔍 Vendor info received:", vendor_info)  # ✅ Add this here
-
-    if not vendor_info:
-        return {"code": 404, "message": "❌ Vendor not found"}
-
-
-    # Step 2: Build payment payload and call payment service first
-    print("📨 Incoming order payload:", order)
-
+def trigger_payment(order):
     total_amount = order.get("TotalAmount")
     if total_amount is None:
         return {
@@ -103,89 +143,39 @@ def processPlaceOrder(order):
     payment_result = invoke_http(PAYMENT_URL, method="POST", json=payment_payload)
     print("🧾 Payment response:", payment_result)
 
-    if payment_result.get("code", 201) != 201:
-        return {
-            "code": 500,
-            "message": "❌ Payment failed",
-            "data": payment_result
-        }
+    return payment_result
 
-    # ✅ Ensure 'transaction' is present
-    transaction_data = payment_result.get("data", {}).get("transaction")
-    if not transaction_data:
-        return {
-            "code": 500,
-            "message": "❌ Transaction data missing from payment response",
-            "data": payment_result
-        }
 
+def trigger_ordermanagement(order, transaction_data, vendor_info):
     order_id = transaction_data.get("OrderID")
     transaction_id = transaction_data.get("TransactionID")
 
-    if not order_id:
-        return {
-            "code": 500,
-            "message": "❌ OrderID not found in transaction data",
-            "data": transaction_data
-        }
-
-    if not transaction_id:
-        return {
-            "code": 500,
-            "message": "❌ TransactionID not found in transaction data",
-            "data": transaction_data
-        }
-
-
-    # Step 3: Build payload for OrderManagement (now includes TransactionID)
     order_payload = {
         "OrderID": order_id,
         "UserID": order["UserID"],
         "TotalAmount": order["TotalAmount"],
-        "TransactionID": transaction_id,  # ✅ now included
+        "TransactionID": transaction_id,
         "VendorID": vendor_info["VendorID"],
         "VendorName": vendor_info.get("VendorName", "Unknown"),
         "Cuisine": vendor_info.get("Cuisine", "Unknown"),
         "ImageURL": vendor_info["ImageURL"],
-        "OrderItems": order["OrderItems"]
+        "Items": order["OrderItems"]
     }
 
-    # Step 4: Create Order
     order_result = invoke_http(ORDER_URL, method="POST", json=order_payload)
     print("📦 Raw order service response:", order_result)
 
-    if order_result.get("code") not in range(200, 300):
-        channel.basic_publish(
-            exchange=amqp_setup.EXCHANGE_NAME,
-            routing_key="order.error",
-            body=json.dumps(order_result)
-        )
-        return {
-            "code": 500,
-            "data": {"order_result": order_result},
-            "message": "❌ Order creation failed"
-        }
+    return order_result
 
-    # Step 5: Extract the new OrderID (optional but safe)
-    try:
-        new_order_id = order_result["data"]["data"]["Order"]["OrderID"]
-    except Exception as e:
-        print("❌ Could not extract OrderID:", e)
-        print("🔍 Full order_result:", order_result)
-        return {
-            "code": 500,
-            "message": "Could not extract OrderID from response",
-            "data": order_result
-        }
 
-    # Step 6: Publish order success
+def trigger_amqp(order_result, order, new_order_id):
+    # Publish order success
     channel.basic_publish(
         exchange=amqp_setup.EXCHANGE_NAME,
         routing_key="order.info",
         body=json.dumps(order_result)
     )
 
-    # Step 7: Notify user
     try:
         notification_data = {
             "UserID": order["UserID"],
@@ -203,15 +193,6 @@ def processPlaceOrder(order):
     except Exception as e:
         print(f"❌ Failed to send notification: {e}")
 
-    return {
-        "code": 201,
-        "message": "✅ Order and payment initiated",
-        "paymentUrl": payment_result.get("paymentUrl"),
-        "orderId": new_order_id,
-        "transaction": transaction_data,
-        "order": order_result.get("data", {}).get("Order"),
-        "items": order_result.get("data", {}).get("Items")
-    }
 
 
 

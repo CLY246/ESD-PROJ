@@ -17,9 +17,9 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="item in savedCart" :key="item.ItemID">
-          <td>1 x {{ item.ItemName }}</td>
-          <td>${{ item.Price }}</td>
+        <tr v-for="item in orderData?.Items || []" :key="item.ItemID">
+          <td>{{ item.Quantity }} x {{ item.ItemName }}</td>
+          <td>${{ (item.Price * item.Quantity).toFixed(2) }}</td>
         </tr>
       </tbody>
       <tfoot>
@@ -42,147 +42,185 @@
   </div>
 </template>
 
+
 <script>
 export default {
   data() {
     return {
-      transactiondata: {
-        Amount: 0,
-        OrderID: null,
-        TransactionID: null
-      },
-      savedCart: [],
-      storedUser: "",
-      isGroupOrder: false,
+      transactiondata: {},
+      orderData: {},
+      requestBody: {},
     };
   },
 
   async mounted() {
     try {
-      this.storedUser = localStorage.getItem("user_id");
-      // this.storedUser = sessionStorage.getItem("user_id") || "";
-      this.isGroupOrder = sessionStorage.getItem("isGroupOrder") === "true";
-      console.log("👤 UserID from sessionStorage:", this.storedUser);
+      const transaction = JSON.parse(sessionStorage.getItem("transaction") || '{}');
+      const cart = JSON.parse(sessionStorage.getItem("cart") || '[]');
+      const userID = localStorage.getItem("user_id") || "";
+      const vendorName = sessionStorage.getItem("vendorname") || "Vendor";
+      const cuisine = sessionStorage.getItem("cuisine") || "Unknown";
 
-      // ✅ 1. Read and parse once
-      const transaction = sessionStorage.getItem("transaction");
-      const parsedTransaction = transaction ? JSON.parse(transaction) : null;
-      console.log("💳 Raw transaction from sessionStorage:", parsedTransaction);
+      console.log("Success.vue mounted - Retrieved data:", {
+        transaction,
+        cartLength: cart.length,
+        userID,
+        vendorName,
+        cuisine
+      });
 
-      if (!parsedTransaction || !parsedTransaction.Amount || !parsedTransaction.TransactionID) {
-        throw new Error("Missing or invalid transaction data");
+      // Check for missing data but don't throw an error - handle gracefully
+      if (!transaction.OrderID || !transaction.TransactionID || !cart.length || !userID) {
+        console.error("❌ Missing required data:", {
+          hasOrderID: !!transaction.OrderID,
+          hasTransactionID: !!transaction.TransactionID,
+          cartLength: cart.length,
+          hasUserID: !!userID
+        });
+        
+        // Show message to user and redirect after a delay
+        this.errorMessage = "Order information is incomplete. Redirecting to home page...";
+        setTimeout(() => {
+          this.$router.push('/');
+        }, 3000);
+        return; // Stop execution
       }
 
-      // ✅ 2. Use parsed object instead of accessing sessionStorage again
-      const amount = parseFloat(parsedTransaction.Amount) || 0;
-      this.transactiondata = parsedTransaction;
+      this.transactiondata = transaction;
 
-      const vendorCuisine = sessionStorage.getItem("cuisine") || "";
-      const vendorName = sessionStorage.getItem("vendorname") || "";
-
-      const cart = sessionStorage.getItem("cart");
-      const parsedCart = cart ? JSON.parse(cart) : [];
-      this.savedCart = parsedCart;
-
-      const mappedCart = parsedCart.map((item) => ({
+      // Format for Order History
+      const mappedCart = cart.map(item => ({
         Id: item.ItemID,
         VendorID: item.VendorID,
         VendorName: vendorName,
-        Cuisine: vendorCuisine,
+        Cuisine: cuisine,
         ImageURL: item.ImageURL,
-        OrderId: parsedTransaction.OrderID,
+        OrderId: transaction.OrderID
       }));
 
       this.requestBody = {
         UserOrdersAPI: {
-          UserID: this.storedUser,
-          OrderID: parsedTransaction.OrderID,
-          OrderDetails: mappedCart,
-        },
+          UserID: userID,
+          OrderID: transaction.OrderID,
+          OrderDetails: mappedCart
+        }
       };
 
-      const cartitems = parsedCart.map((item) => ({
+      // Format for Order Management
+      const cartItems = cart.map(item => ({
         ItemID: parseInt(item.ItemID),
         ItemName: item.ItemName,
         Quantity: parseInt(item.quantity) || 1,
         Price: parseFloat(item.Price) || 0,
-        VendorID: parseInt(item.VendorID),
+        VendorID: parseInt(item.VendorID)
       }));
 
       this.orderData = {
-        OrderID: parsedTransaction.OrderID,
-        UserID: this.storedUser,
-        TotalAmount: amount,
-        TransactionID: parsedTransaction.TransactionID,
-        VendorID: parsedCart.length > 0 ? parseInt(parsedCart[0].VendorID) : null,
+        OrderID: transaction.OrderID,
+        UserID: userID,
+        TotalAmount: parseFloat(transaction.Amount),
+        TransactionID: transaction.TransactionID,
+        VendorID: parseInt(cart[0].VendorID),
         VendorName: vendorName,
-        Cuisine: vendorCuisine,
-        ImageURL: parsedCart.length > 0 ? parsedCart[0].ImageURL : "",
-        Items: cartitems,
+        Cuisine: cuisine,
+        ImageURL: cart[0]?.ImageURL || "",
+        Items: cartItems
       };
 
-      console.log("🧾 Final orderData payload:", JSON.stringify(this.orderData, null, 2));
-
-      // ✅ 4. Post everything
+      // ✅ Sequential flow
       await this.postOrderHistory();
-      await this.postOrder();
+      const orderResult = await this.postOrder();
+      if (orderResult) await this.triggerAMQP(orderResult);
 
-      // ✅ 5. Clear storage AFTER use
-      setTimeout(() => sessionStorage.clear(), 5000);
-
+      setTimeout(() => {
+        console.log("Clearing session storage after successful processing");
+        sessionStorage.clear();
+      }, 5000);
+    
     } catch (error) {
-      console.error("❌ Error in mounted():", error);
+      console.error("❌ Error in Success.vue mounted():", error);
+      alert("Error: " + error.message);
     }
-  }
-  ,
+  },
+
   methods: {
     async postOrderHistory() {
       try {
-        console.log("📨 Posting order history:", this.requestBody);
-        const response = await fetch(
-          "https://personal-aefq3pkb.outsystemscloud.com/OrderManagement/rest/OrderHistory/createHistory",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(this.requestBody),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Server error: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        console.log("📦 Order history created successfully:", data);
-      } catch (error) {
-        console.error("❌ Error posting order history:", error);
-      }
-    },
-    async postOrder() {
-      try {
-        console.log("📤 Posting order to /orders:", this.orderData);
-        const response = await fetch("http://localhost:5003/orders", {
+        const res = await fetch("https://personal-aefq3pkb.outsystemscloud.com/OrderManagement/rest/OrderHistory/createHistory", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(this.orderData),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(this.requestBody)
         });
 
-        if (!response.ok) {
-          const errText = await response.text();
-          throw new Error(`Server error: ${response.status} ${response.statusText} → ${errText}`);
-        }
-
-        const data = await response.json();
-        console.log("✅ Order created successfully:", data);
-      } catch (error) {
-        console.error("❌ Error creating order:", error);
+        if (!res.ok) throw new Error(`Order history failed: ${res.status}`);
+        console.log("📦 Order history logged successfully");
+      } catch (err) {
+        console.error("❌ Order history logging error:", err);
       }
     },
-  },
+
+    async postOrder() {
+      try {
+        const vendorRes = await fetch(`http://localhost:8000/vendors/${this.orderData.VendorID}`);
+        const vendorInfo = await vendorRes.json();
+
+        const res = await fetch("http://localhost:8000/trigger_ordermanagement", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            order: {
+              UserID: this.orderData.UserID,
+              VendorID: this.orderData.VendorID,
+              TotalAmount: this.orderData.TotalAmount,
+              OrderItems: this.orderData.Items
+            },
+            transaction_data: {
+              OrderID: this.orderData.OrderID,
+              TransactionID: this.orderData.TransactionID,
+              Amount: this.orderData.TotalAmount
+            },
+            vendor_info: vendorInfo
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(JSON.stringify(data));
+        console.log("✅ Order saved via trigger_ordermanagement:", data);
+
+        return data; // return for AMQP use
+      } catch (err) {
+        console.error("❌ Order saving error:", err);
+        return null;
+      }
+    },
+
+    async triggerAMQP(orderMgmtData) {
+      try {
+        const newOrderID = orderMgmtData?.data?.data?.Order?.OrderID || this.orderData.OrderID;
+
+        const res = await fetch("http://localhost:8000/trigger_amqp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            order_result: orderMgmtData,
+            order: {
+              UserID: this.orderData.UserID,
+              VendorID: this.orderData.VendorID,
+              TotalAmount: this.orderData.TotalAmount,
+              OrderItems: this.orderData.Items
+            },
+            new_order_id: newOrderID
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(JSON.stringify(data));
+        console.log("📣 AMQP notification sent:", data);
+      } catch (err) {
+        console.error("❌ AMQP trigger error:", err);
+      }
+    }
+  }
 };
 </script>
 

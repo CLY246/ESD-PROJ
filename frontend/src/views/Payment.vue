@@ -2,34 +2,64 @@
 import { ref, onMounted } from "vue";
 import axios from "axios";
 import { useRouter } from "vue-router";
+import { jwtDecode } from "jwt-decode"; 
 
 const router = useRouter();
+
 const amount = ref(0);
 const paymentUrl = ref("");
 
-// 👇 Assume these are passed or available
+// Retrieve from session storage (cart info)
 const cart = JSON.parse(sessionStorage.getItem("cart")) || [];
-const userID = sessionStorage.getItem("user_id") || "";
-const vendorName = sessionStorage.getItem("vendorname") || "";
-const cuisine = sessionStorage.getItem("cuisine") || "";
+const vendorName = cart[0]?.VendorName || cart[0]?.vendor_name || "Vendor";
+const cuisine = cart[0]?.Cuisine || cart[0]?.cuisine || "Unknown";
 
+// Retrieve userID explicitly from local storage
+let userID = localStorage.getItem("user_id") || "";
+if (!userID) {
+  const token = localStorage.getItem("token");
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      userID = decoded.UserID || decoded.user_id || decoded.sub;
+      localStorage.setItem("user_id", userID); // Save explicitly in local storage
+    } catch (error) {
+      console.error("JWT decode failed:", error);
+      alert("Authentication error. Please log in again.");
+      router.push('/');
+    }
+  } else {
+    alert("User not authenticated. Redirecting to home.");
+    router.push('/');
+  }
+}
 
 const createPayment = async () => {
   try {
-    // ✅ Auto-calculate total
     if (!cart.length) {
-  alert("Your cart is empty.");
-  return;
-}
+      alert("Your cart is empty.");
+      router.push('/');
+      return;
+    }
 
+    // Calculate total amount from cart
     amount.value = cart.reduce((sum, item) => {
       const price = parseFloat(item.Price) || 0;
       const qty = parseInt(item.quantity) || 1;
       return sum + price * qty;
     }, 0);
 
-    const response = await axios.post("http://localhost:8000/payments", {
-      Amount: amount.value,
+    // Trigger payment via backend API
+    const response = await axios.post("http://localhost:8000/trigger_payment", {
+      UserID: userID,
+      VendorID: parseInt(cart[0].VendorID),
+      TotalAmount: amount.value,
+      OrderItems: cart.map(item => ({
+        ItemID: parseInt(item.ItemID),
+        ItemName: item.ItemName,
+        Quantity: parseInt(item.quantity) || 1,
+        Price: parseFloat(item.Price)
+      }))
     });
 
     console.log("Stripe response:", response.data);
@@ -37,40 +67,61 @@ const createPayment = async () => {
     if (response.data.paymentUrl && response.data.transaction) {
       const { OrderID, TransactionID, Amount } = response.data.transaction;
 
+      // Prepare sanitized cart for success page
       const sanitizedCart = cart.map(item => ({
-        ...item,
         ItemID: parseInt(item.ItemID),
+        ItemName: item.ItemName,
         Price: parseFloat(item.Price),
-        quantity: parseInt(item.quantity) || 1
+        quantity: parseInt(item.quantity) || 1,
+        VendorID: parseInt(item.VendorID),
+        ImageURL: item.ImageURL || ""
       }));
 
-      sessionStorage.setItem(
-        "transaction",
-        JSON.stringify({
-          OrderID: parseInt(OrderID),
-          TransactionID: TransactionID,
-          Amount: parseFloat(Amount)
-        })
-      );
+      sessionStorage.setItem("transaction", JSON.stringify({
+        OrderID: parseInt(OrderID),
+        TransactionID: TransactionID,
+        Amount: parseFloat(Amount),
+        paymentUrl: response.data.paymentUrl
+      }));
       sessionStorage.setItem("cart", JSON.stringify(sanitizedCart));
-      sessionStorage.setItem("user_id", userID);
       sessionStorage.setItem("vendorname", vendorName);
       sessionStorage.setItem("cuisine", cuisine);
       sessionStorage.setItem("isGroupOrder", "true");
 
+      console.log("🚨 Session Storage before Stripe redirect:", {
+        userID,
+        cart: sanitizedCart,
+        vendorName,
+        cuisine
+      });
 
-      paymentUrl.value = response.data.paymentUrl;
-      window.location.href = paymentUrl.value;
+      // Redirect to Stripe Checkout
+      window.location.href = response.data.paymentUrl;
+
     } else {
-      alert("No payment URL returned.");
+      alert("No payment URL returned from the server.");
+      router.push('/');
     }
   } catch (error) {
     console.error("Payment error:", error);
     alert("Payment failed. Please try again.");
+    router.push('/');
   }
 };
 
+onMounted(() => {
+  const transaction = JSON.parse(sessionStorage.getItem("transaction"));
+
+  if (transaction?.paymentUrl) {
+    console.log("Redirecting to existing payment URL:", transaction.paymentUrl);
+    window.location.href = transaction.paymentUrl;
+  } else {
+    createPayment();
+  }
+});
 </script>
+
+
 
 
 <template>
