@@ -37,8 +37,8 @@ services:
         strip_path: false
         
       - name: get-email
-        paths: ["/email/([a-zA-Z0-9\\-]+)"]
-        methods: ["GET"]
+        paths: ["~/email/([a-zA-Z0-9\\-]+)"]
+        methods: ["GET", "OPTIONS"]
         strip_path: false
         regex_priority: 1
 
