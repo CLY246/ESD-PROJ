@@ -403,10 +403,10 @@ def send_order_email(body):
     try:
         # Parse the incoming JSON message
         data = json.loads(body)
-        user_email = data.get("UserEmail")  # Ensure this key is in the RabbitMQ message
+        user_email = data.get("Email")  # Ensure this key is in the RabbitMQ message
 
         if not user_email:
-            print("❌ Error: Missing UserEmail in message!")
+            print("❌ Error: Missing Email in message!")
             return False  # Don't proceed if email is missing
 
         print(f"📧 Sending email to: {user_email}")
@@ -473,15 +473,15 @@ def health_check():
 
 
 # Test Email API endpoint
-@app.route('/send_test_email', methods=['POST'])
+@app.route('/send_email', methods=['POST'])
 def send_test_email():
     """Manual email testing endpoint"""
     try:
         data = request.get_json()
         if send_order_email(json.dumps(data)):  # Test email with the provided data
-            return jsonify({"message": "Test email sent!"}), 200
+            return jsonify({"message": "✅ Email sent successfully!"}), 200
         else:
-            return jsonify({"error": "Failed to send test email"}), 500
+            return jsonify({"error": "❌ Email Sending Error"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
