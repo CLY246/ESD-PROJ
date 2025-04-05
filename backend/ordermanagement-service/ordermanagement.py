@@ -22,7 +22,7 @@ db = SQLAlchemy(app)
 
 # Initialize Flasgger with OpenAPI specifications
 app.config['SWAGGER'] = {
-    'title': 'ordermanagement Microservice API',
+    'title': 'Order Management Microservice API',
     'version': 1.0,
     "openapi": "3.0.2",
     'description': 'API to retrieve order queue and menu items',
