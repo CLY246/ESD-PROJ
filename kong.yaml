@@ -167,7 +167,7 @@ services:
 
 
   - name: placeanorder-service
-    url: http://placeanorder-service:5000  # 👈 your backend runs on port 5000
+    url: http://placeanorder-service:5000 
 
     plugins:
       - name: cors
@@ -189,6 +189,11 @@ services:
         methods: ["POST", "OPTIONS"]
         strip_path: false
 
+      - name: finalize-order
+        paths: ["~/finalize_order/([a-zA-Z0-9\\-]+)"]
+        methods: ["POST", "OPTIONS"]
+        strip_path: false
+
       - name: vendors-proxy
         paths: ["/vendors"]
         methods: ["GET", "OPTIONS"]
@@ -205,7 +210,7 @@ services:
         methods: ["POST", "OPTIONS"]
         strip_path: false
 
-      - name: trigger-payment   # ✅ Add this!
+      - name: trigger-payment 
         paths: ["/trigger_payment"]
         methods: ["POST", "OPTIONS"]
         strip_path: false

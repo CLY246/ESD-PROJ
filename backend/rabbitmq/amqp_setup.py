@@ -171,17 +171,17 @@ def create_connection():
 def create_connection_with_retry(retries=10, delay=5):
     for attempt in range(1, retries + 1):
         try:
-            print(f"📡 Trying to connect to RabbitMQ at {hostname}:{port} (attempt {attempt}/{retries})")
+            print(f"Trying to connect to RabbitMQ at {hostname}:{port} (attempt {attempt}/{retries})")
             connection = create_connection()
-            print("✅ Connected to RabbitMQ.")
+            print("Connected to RabbitMQ.")
             return connection
         except pika.exceptions.AMQPConnectionError as e:
-            print(f"❌ Connection failed: {e}")
+            print(f"Connection failed: {e}")
             if attempt < retries:
                 print(f"⏳ Retrying in {delay} seconds...")
                 time.sleep(delay)
             else:
-                print("❌ Exceeded maximum retries. Exiting.")
+                print("Exceeded maximum retries. Exiting.")
                 exit(1)
 
 
@@ -198,11 +198,11 @@ def setup_queues_with_channel(channel):
 
         # Order notification queue
         channel.queue_declare(queue='order_notification', durable=True)
-        channel.queue_bind(exchange=EXCHANGE_NAME, queue='order_notification', routing_key='*.order.notification')
+        channel.queue_bind(exchange=EXCHANGE_NAME, queue='order_notification', routing_key='#.order.notification')
 
-        print("✅ Queues set up successfully.")
+        print("Queues set up successfully.")
     except pika.exceptions.AMQPError as e:
-        print(f"❌ Queue setup failed: {e}")
+        print(f"Queue setup failed: {e}")
 
 def connect():
     """Establish connection and channel, declare exchange and queues, return both."""

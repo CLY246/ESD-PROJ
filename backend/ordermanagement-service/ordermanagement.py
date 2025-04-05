@@ -29,7 +29,7 @@ OUTSYSTEMS_URL = "https://personal-aefq3pkb.outsystemscloud.com/OrderManagement/
 
 class Order(db.Model):
     __tablename__ = "orders"
-    OrderID = db.Column(db.Integer, primary_key=True, autoincrement=False)
+    OrderID = db.Column(db.Integer, primary_key=True, autoincrement=False, nullable=False)
     UserID = db.Column(db.String, nullable=False)
     OrderDateTime = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp(), nullable=False)
     TotalAmount = db.Column(db.Float, nullable=False)
@@ -163,7 +163,7 @@ def place_order():
         if not user_id or not total_amount or not transaction_id:
             return jsonify({"message": "Missing data"}), 400
 
-        # ✅ Step 1: Save main order
+        # Save main order
         new_order = Order(
             OrderID=order_id,
             UserID=user_id,
@@ -172,13 +172,14 @@ def place_order():
             VendorID=vendor_id,
             VendorName=data.get("VendorName"),
             Cuisine=data.get("Cuisine"),
-            ImageURL=data.get("ImageURL")
+            ImageURL=data.get("ImageURL"),
+            OrderStatus="Completed"
         )
         db.session.add(new_order)
 
-        # ✅ Step 2: Save order items
+        # Save order items
         items = data.get("Items", [])
-        print("📦 Incoming Items:", items)
+        print("Incoming Items:", items)
         for item in items:
             order_item = OrderItem(
                 OrderID=order_id,
@@ -249,14 +250,6 @@ def update_order_status(order_id):
 
     return jsonify({"message": "Order status updated"})
 
-# @app.route('/orders/<int:order_id>', methods=['GET'])
-# def get_order(order_id):
-#     order = Order.query.filter_by(OrderID=order_id).first()
-#     if not order:
-#         return jsonify({"message": "Order not found"}), 404
-#     return jsonify(order.json()), 200
-
-
 @app.route('/orders/<int:order_id>', methods=['GET'])
 def get_order(order_id):
     try:
@@ -267,7 +260,7 @@ def get_order(order_id):
         print("Found:", order.json())
         return jsonify(order.json()), 200
     except Exception as e:
-        print("❌ ERROR while fetching order:", e)
+        print("ERROR while fetching order:", e)
         return jsonify({"error": str(e)}), 500
 
 

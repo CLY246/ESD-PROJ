@@ -8,6 +8,7 @@ import Navbar from "./components/Navbar.vue";
 import { useRoute } from "vue-router";
 import { computed } from "vue";
 
+
 export default {
   components: {
     Navbar,

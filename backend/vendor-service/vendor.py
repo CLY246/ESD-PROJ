@@ -99,24 +99,6 @@ class MenuItem(db.Model):
             "Category": self.Category,
             "ImageURL": self.ImageURL
         }
-
-# class Inventory(db.Model):
-#     __tablename__ = "Inventory"
-
-#     InventoryID = db.Column(db.Integer, primary_key=True, autoincrement=True)
-#     VendorID = db.Column(db.Integer, db.ForeignKey("Vendors.VendorID"), nullable=False)
-#     ItemID = db.Column(db.Integer, db.ForeignKey("MenuItems.ItemID"), nullable=False)
-#     QuantityAvailable = db.Column(db.Integer, nullable=False)
-#     LastUpdated = db.Column(db.TIMESTAMP, server_default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
-
-#     def json(self):
-#         return {
-#             "InventoryID": self.InventoryID,
-#             "VendorID": self.VendorID,
-#             "ItemID": self.ItemID,
-#             "QuantityAvailable": self.QuantityAvailable,
-#             "LastUpdated": self.LastUpdated
-#         }
     
 @app.route("/")
 def home():

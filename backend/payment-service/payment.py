@@ -58,23 +58,9 @@ def db_check():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-@app.route("/next-order-id", methods=["GET"])
-def get_next_order_id():
-    try:
-        latest_transaction = db.session.query(Transaction).order_by(Transaction.OrderID.desc()).first()
-        next_order_id = (latest_transaction.OrderID + 1) if latest_transaction else 1
-        return jsonify({"OrderID": next_order_id})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-
 
 stripe.api_key = "sk_test_51R2Nh0Bz8bLJBV2onRtvizH4yVf4xcufKaJTXshVg1g42nDYe1M9hGnDeJsM4IWMWCBq1GNEQs0rZ53ue6hA08Xe00IXHYXH0R"
 endpoint_secret = os.getenv("whsec_119db3c043f993227277345c6a1fbc9d49d1898b2e8bd903181a0f326bcccd9a")
-
-
-
 
 
 @app.route("/payments", methods=["GET"])
@@ -92,45 +78,44 @@ def process_payment():
         return jsonify({"message": "Amount is required"}), 400
 
     try:
-        # Step 1: Generate new OrderID automatically
+        # 1: Generate new OrderID automatically
         latest_transaction = db.session.query(Transaction).order_by(Transaction.OrderID.desc()).first()
         order_id = (latest_transaction.OrderID + 1) if latest_transaction else 1
-        print(f"🆕 Generated OrderID: {order_id}")
+        print(f"Generated OrderID: {order_id}")
 
-        # Step 2: Convert amount to cents for Stripe
+        # 2: Convert amount to cents for Stripe
         amount_in_cents = int(float(amount) * 100)
 
 
-        # Step 3: Create Stripe session
+        # 3: Create Stripe session
         session = stripe.checkout.Session.create(
-            payment_method_types=["card"],
-            line_items=[{
-                "price_data": {
-                    "currency": "sgd",
-                    "product_data": {"name": "Restaurant Order"},
-                    "unit_amount": amount_in_cents,
-                },
-                "quantity": 1,
-            }],
-            mode="payment",
-            success_url="http://localhost:8080/success",
-            cancel_url="http://localhost:8080/cancel",
-            metadata={"order_id": str(order_id)}
-        )
-
+        payment_method_types=["card"],
+        line_items=[{
+            "price_data": {
+            "currency": "sgd",
+            "product_data": {"name": "Restaurant Order"},
+            "unit_amount": amount_in_cents,
+            },
+            "quantity": 1,
+        }],
+        mode="payment",
+        success_url=f"http://localhost:8080/success?order_id={order_id}",
+        cancel_url="http://localhost:8080/cancel",
+        metadata={"order_id": str(order_id)}
+)       
      
-        # Step 4: Save transaction to DB
+        # 4: Save transaction to DB
         new_transaction = Transaction(
             OrderID=order_id,
             Amount=amount,
             PaymentMethod="Stripe",
-            PaymentStatus="Pending"  # straight completion
+            PaymentStatus="Pending"
         )
 
         db.session.add(new_transaction)
         db.session.commit()
 
-        # ✅ Step 5: Return Stripe session URL
+        # : Return Stripe session URL
         return jsonify({
             "message": "Payment initiated successfully",
             "paymentUrl": session.url,

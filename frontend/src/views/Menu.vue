@@ -111,7 +111,7 @@
               :cancel-url="cancelURL"
               @loading="(v) => (loading = v)"
             />
-            <button class="btn btn-dark w-100" @click="submitPayment">
+            <button class="btn btn-dark w-100" @click="placeorder">
               Review Payment and Address
             </button>
           </div>
@@ -140,8 +140,6 @@ const loading = ref(false);
 const publishableKey = ref(
   "pk_test_51R2Nh0Bz8bLJBV2o8mzAgS2z1jPVz0RVXTsJLF2lcH6TNpbfiOWNDhqF5it1GN2KkT8n7NUqltpJU7uAx5yIPuyl00umDgnPUu"
 );
-const successURL = ref("http://localhost:8080/success");
-const cancelURL = ref("http://localhost:8080/cancel");
 
 // Compute Line Items for Stripe
 const lineItems = computed(() =>
@@ -187,7 +185,6 @@ const startGroupOrder = async () => {
     );
 
     const cartId = response.data.cartId;
-    // inviteLink.value = response.data.invite_link;
 
     localStorage.setItem("shared_cart_id", cartId);
 
@@ -199,58 +196,75 @@ const startGroupOrder = async () => {
 
 // const submitPayment = async () => {
 //   try {
-//     const response = await axios.post("http://localhost:5005/payments", {
-//       OrderID: new Date().getTime(), // Generate a temporary OrderID
-//       Amount: totalPrice.value,
-//       PaymentMethod: "Stripe"
-//     });
-
+//     const response = await axios.post(
+//       "http://localhost:5005/payments",
+//       { 
+//         Amount: totalPrice.value,
+//       },
+//       {
+//         headers: { "Content-Type": "application/json" }, // Ensure JSON format
+//       }
+//     );
+//     if (response.data.transaction) {
+//       sessionStorage.setItem("transaction", JSON.stringify(response.data.transaction));
+//       sessionStorage.setItem("cart", JSON.stringify(cart.value));
+//       sessionStorage.setItem('cuisine', vendor.value.Cuisine);
+//       sessionStorage.setItem('vendorname', vendor.value.VendorName);
+//       sessionStorage.setItem('vendorid', vendor.value.VendorId);
+//       sessionStorage.setItem("isGroupOrder", "false");
+//       console.log("Transaction received:", response.data.transaction);
+//     }
 //     if (response.data.paymentUrl) {
-//       // Redirect to Stripe Checkout URL
-//       window.location.href = response.data.paymentUrl;
+      
+
+//       window.location.href = response.data.paymentUrl; // Redirect to Stripe
 //     } else {
 //       alert("Error initiating payment.");
 //     }
 //   } catch (error) {
-//     console.error("Payment error:", error);
+//     console.error("Payment error:", error.response?.data || error);
 //     alert("Failed to initiate payment.");
 //   }
 // };
-const submitPayment = async () => {
+const placeorder = async () => {
   try {
-    const idResponse = await axios.get("http://localhost:5005/next-order-id");
-    const orderId = idResponse.data.OrderID;
-    const response = await axios.post(
-      "http://localhost:5005/payments",
-      { // Generate a temporary OrderID
-        OrderID: orderId,
-        Amount: totalPrice.value,
-      },
-      {
-        headers: { "Content-Type": "application/json" }, // Ensure JSON format
-      }
-    );
-    if (response.data.transaction) {
-      sessionStorage.setItem("transaction", JSON.stringify(response.data.transaction));
-      sessionStorage.setItem("cart", JSON.stringify(cart.value));
-      sessionStorage.setItem('cuisine', vendor.value.Cuisine);
-      sessionStorage.setItem('vendorname', vendor.value.VendorName);
-      sessionStorage.setItem('vendorid', vendor.value.VendorId);
-      sessionStorage.setItem("isGroupOrder", "false");
-      console.log("Transaction received:", response.data.transaction);
-    }
-    if (response.data.paymentUrl) {
-      
+    const userID = localStorage.getItem("user_id");
 
-      window.location.href = response.data.paymentUrl; // Redirect to Stripe
+    const cartItems = cart.value.map((item) => ({
+      ItemID: parseInt(item.ItemID),
+      ItemName: item.ItemName,
+      Quantity: parseInt(item.quantity) || 1,
+      Price: parseFloat(item.Price) || 0,
+      VendorID: parseInt(item.VendorID),
+    }));
+
+    const orderData = {
+      UserID: userID,
+      VendorID: vendorId,
+      TotalAmount: parseFloat(totalPrice.value),
+      OrderItems: cartItems,
+    };
+
+    const response = await axios.post("http://localhost:8000/place_order", {
+      order: orderData,
+    }, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (response.data && response.data.paymentUrl) {
+      sessionStorage.setItem("isGroupOrder", "false");
+      window.location.href = response.data.paymentUrl;
     } else {
-      alert("Error initiating payment.");
+      alert("Failed to get payment link.");
     }
   } catch (error) {
-    console.error("Payment error:", error.response?.data || error);
-    alert("Failed to initiate payment.");
+    console.error("Order placement error:", error.response?.data || error);
+    alert("Failed to place order.");
   }
 };
+
 
 onMounted(() => {
   fetchVendor();
