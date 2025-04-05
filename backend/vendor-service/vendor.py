@@ -22,7 +22,7 @@ app.config['SWAGGER'] = {
     'title': 'Vendor Microservice API',
     'version': 1.0,
     "openapi": "3.0.2",
-    'description': 'API to retrieve, update, and delete vendors and menu items',
+    'description': 'API to retrieve vendors and menu items',
 }
 
 swagger = Swagger(app)
@@ -136,11 +136,7 @@ def get_vendors():
     description: Fetches all vendors from the database
     responses:
         200:
-            description: A list of vendors
-            schema:
-                type: array
-                items:
-                    $ref: '#/definitions/Vendor'
+            description: Returns a list of vendors
         404:
             description: No vendors found
         500:
@@ -166,14 +162,13 @@ def get_vendor(vendor_id):
         in: path
         type: integer
         required: true
-        description: The ID of the vendor
+        description: The ID of the vendor(Integer)
     responses:
         200:
-            description: Vendor details
-            schema:
-                $ref: '#/definitions/Vendor'
+            description: Returns Information of specified vendor
+           
         404:
-            description: Vendor not found
+            description: No Information available on specified vendor
     """
     vendor = Vendor.query.filter_by(VendorID=vendor_id).first()
 
@@ -221,8 +216,6 @@ def get_menu_item(item_id):
     responses:
         200:
             description: Menu item details
-            schema:
-                $ref: '#/definitions/MenuItem'
         404:
             description: Item not found
     """
@@ -241,4 +234,4 @@ def get_menu_item(item_id):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=True, host="0.0.0.0", port=5002)

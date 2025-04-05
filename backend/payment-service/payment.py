@@ -7,6 +7,7 @@ import uuid
 import stripe
 from sqlalchemy import BigInteger
 from sqlalchemy import text
+from flasgger import Swagger
 
 
 app = Flask(__name__)
@@ -19,6 +20,16 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
 
 db = SQLAlchemy(app)
+
+# Initialize Flasgger with OpenAPI specifications
+app.config['SWAGGER'] = {
+    'title': 'Payment Microservice API',
+    'version': 1.0,
+    "openapi": "3.0.2",
+    'description': 'API to retrieve order queue and menu items',
+}
+
+swagger = Swagger(app)
 
 class Transaction(db.Model):
     __tablename__ = 'Transactions'  
@@ -47,17 +58,62 @@ with app.app_context():
 
 @app.route('/api/health')
 def health_check():
+    """
+    Health check endpoint
+    ---
+    responses:
+      200:
+        description: API is running
+    """
     return jsonify({"message": "Payment API is running!"})
 
 
 @app.route("/api/db-check")
 def db_check():
+    """
+    db check endpoint
+    ---
+    responses:
+      200:
+        description: Database is connected
+        
+        500: internal error
+    """
     try:
         db.session.execute(text("SELECT 1"))
         return jsonify({"status": "Connected to DB ✅"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
+@app.route("/next-order-id", methods=["GET"])
+def get_next_order_id():
+    """
+Get Next Order ID
+---
+tags:
+  - Order
+description: Retrieve the next available Order ID
+responses:
+  200:
+    description: Successfully retrieved
+    schema:
+      type: object
+      properties:
+        OrderID:
+          type: integer
+          example: 10
+  500:
+    description: Server error
+"""
+    try:
+        latest_transaction = db.session.query(Transaction).order_by(Transaction.OrderID.desc()).first()
+        next_order_id = (latest_transaction.OrderID + 1) if latest_transaction else 1
+        return jsonify({"OrderID": next_order_id})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+
 
 stripe.api_key = "sk_test_51R2Nh0Bz8bLJBV2onRtvizH4yVf4xcufKaJTXshVg1g42nDYe1M9hGnDeJsM4IWMWCBq1GNEQs0rZ53ue6hA08Xe00IXHYXH0R"
 endpoint_secret = os.getenv("whsec_119db3c043f993227277345c6a1fbc9d49d1898b2e8bd903181a0f326bcccd9a")
@@ -65,12 +121,96 @@ endpoint_secret = os.getenv("whsec_119db3c043f993227277345c6a1fbc9d49d1898b2e8bd
 
 @app.route("/payments", methods=["GET"])
 def get_all_transactions():
+    """
+Get All Transactions
+---
+tags:
+  - Payments
+description: Retrieve all transactions from the database
+responses:
+  200:
+    description: A list of transactions
+    schema:
+      type: array
+      items:
+        type: object
+        properties:
+          TransactionID:
+            type: integer
+            example: 1
+          OrderID:
+            type: integer
+            example: 1
+          Amount:
+            type: number
+            format: float
+            example: 20.5
+          PaymentMethod:
+            type: string
+            example: Stripe
+          PaymentStatus:
+            type: string
+            example: Success
+"""
+
     transactions = Transaction.query.all()
     return jsonify([t.json() for t in transactions])
 
 
 @app.route("/payments", methods=["POST"])
 def process_payment():
+    """
+Process a New Payment
+---
+tags:
+  - Payments
+description: Initiates a Stripe Checkout session and records the payment
+parameters:
+  - in: body
+    name: body
+    required: true
+    schema:
+      type: object
+      properties:
+        Amount:
+          type: number
+          example: 10.0
+responses:
+  201:
+    description: Payment session created
+    schema:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Payment initiated successfully
+        paymentUrl:
+          type: string
+          example: https://checkout.stripe.com/...
+        transaction:
+          type: object
+          properties:
+            TransactionID:
+              type: integer
+              example: 1
+            OrderID:
+              type: integer
+              example: 1
+            Amount:
+              type: number
+              example: 10.0
+            PaymentMethod:
+              type: string
+              example: Stripe
+            PaymentStatus:
+              type: string
+              example: Pending
+  400:
+    description: Invalid input
+  500:
+    description: Internal server error
+"""
+
     data = request.json
     amount = data.get("Amount")
 
@@ -132,6 +272,22 @@ def process_payment():
 
 @app.route('/webhook', methods=['POST'])
 def stripe_webhook():
+    """
+Stripe Webhook Listener
+---
+tags:
+  - Stripe
+description: Handles Stripe webhook events for session completion
+consumes:
+  - application/json
+produces:
+  - application/json
+responses:
+  200:
+    description: Webhook received
+  400:
+    description: Invalid payload or signature
+"""
     payload = request.data
     sig_header = request.headers.get('stripe-signature')
 
@@ -163,6 +319,38 @@ def stripe_webhook():
 
 @app.route("/payments/transaction/<int:transaction_id>", methods=["GET"])
 def get_payment_by_transaction_id(transaction_id):
+    """
+    Get Payment by Transaction ID
+    ---
+    tags:
+      - Payments
+    parameters:
+      - name: transaction_id
+        in: path
+        type: integer
+        required: true
+        description: ID of the transaction to retrieve
+    responses:
+      200:
+        description: Transaction retrieved successfully
+        schema:
+          type: object
+          properties:
+            TransactionID:
+              type: integer
+            OrderID:
+              type: integer
+            Amount:
+              type: number
+              format: float
+            PaymentMethod:
+              type: string
+            PaymentStatus:
+              type: string
+      404:
+        description: Transaction not found
+    """
+    
     transaction = Transaction.query.filter_by(TransactionID=transaction_id).first()
     if not transaction:
         return jsonify({"message": "Transaction not found"}), 404
@@ -171,6 +359,23 @@ def get_payment_by_transaction_id(transaction_id):
 
 @app.route("/payments/<int:order_id>", methods=["GET"])
 def get_payment_status(order_id):
+    """
+    Get Payment by Order ID
+    ---
+    tags:
+    - Payments
+    parameters:
+    - in: path
+      name: order_id
+      required: true
+      schema:
+      type: integer
+    responses:
+        200:
+          description: Transaction found
+        404:
+          description: Transaction not found
+    """
     transaction = Transaction.query.filter_by(OrderID=order_id).first()
     if not transaction:
         return jsonify({"message": "Transaction not found"}), 404
