@@ -4,6 +4,7 @@ from flask_jwt_extended import create_access_token, jwt_required, JWTManager
 from supabase_auth import sign_up_user, sign_in_user, get_user_info
 from supabase_auth import supabase_client
 from flask_sqlalchemy import SQLAlchemy
+from flasgger import Swagger;
 
 app = Flask(__name__)
 app.config["DEBUG"] = True
@@ -12,7 +13,15 @@ CORS(app)
 app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres.zfuesqdkqrlbnmsfichi:postgres@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+# Initialize Flasgger with OpenAPI specifications
+app.config['SWAGGER'] = {
+    'title': 'user Microservice API',
+    'version': 1.0,
+    "openapi": "3.0.2",
+    'description': 'API to retrieve, update, and delete vendors and menu items',
+}
 
+swagger = Swagger(app)
 db = SQLAlchemy()
 
 with app.app_context():
