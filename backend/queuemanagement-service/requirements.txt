@@ -6,3 +6,4 @@ mysql-connector-python
 requests
 flask-bcrypt
 flask-jwt-extended
+flasgger

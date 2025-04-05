@@ -6,4 +6,5 @@ mysql-connector-python
 requests
 stripe
 psycopg2-binary
+flasgger
 
