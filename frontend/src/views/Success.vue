@@ -53,12 +53,17 @@ export default {
       loading: true,
       success: false,
       message: "",
+      isGroupOrder: false,
     };
   },
 
   async mounted() {
     const route = useRoute()
-    const orderId = route.query.order_id;
+    const orderId = this.$route.query.order_id;
+    console.log("Received OrderID:", orderId);
+    // console.log(user_id)
+    this.isGroupOrder = sessionStorage.getItem("isGroupOrder") === "true";
+
   
 
     if (!orderId) {
@@ -67,8 +72,16 @@ export default {
       return;
     }
 
+    // await this.finalizeOrder(orderId);
+    // this.loading = false;
+
     try {
-      const response = await axios.post(`http://localhost:8000/finalize_order/${orderId}`)
+      const finalizeEndpoint = this.isGroupOrder
+      ? `http://localhost:8000/finalize_group_order/${orderId}`
+      : `http://localhost:8000/finalize_order/${orderId}`;
+
+      const response = await axios.post(finalizeEndpoint);
+
       if (response.status === 200) {
         this.success = true;
       } else {

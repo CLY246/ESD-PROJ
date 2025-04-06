@@ -198,7 +198,10 @@ def setup_queues_with_channel(channel):
 
         # Order notification queue
         channel.queue_declare(queue='order_notification', durable=True)
-        channel.queue_bind(exchange=EXCHANGE_NAME, queue='order_notification', routing_key='#.order.notification')
+        # channel.queue_bind(exchange=EXCHANGE_NAME, queue='order_notification', routing_key='#.order.notification')
+        channel.queue_bind(exchange=EXCHANGE_NAME, queue='order_notification', routing_key='order.placed.order.notification')
+        channel.queue_bind(exchange=EXCHANGE_NAME, queue='order_notification', routing_key='order.placed.grouporder.notification') 
+
 
         print("Queues set up successfully.")
     except pika.exceptions.AMQPError as e:

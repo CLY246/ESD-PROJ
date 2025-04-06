@@ -31,7 +31,8 @@ db = SQLAlchemy(app)
 # Connect to RabbitMQ once
 connection, channel = amqp_setup.connect()
 
-monitorBindingKey = "*.order.notification"
+monitorBindingKey = "order.placed.*.notification"
+
 QUEUE_NAME = "order_notification"  
 port = 465
 email = "yumsinmytumss@gmail.com"
@@ -95,7 +96,8 @@ def receiveOrderDetail():
     try:
         # Use the existing global connection and channel
         channel.queue_declare(queue=QUEUE_NAME, durable=True)
-        channel.queue_bind(exchange="order_topic", queue=QUEUE_NAME, routing_key=monitorBindingKey)
+        channel.queue_bind(exchange="order_topic", queue=QUEUE_NAME, routing_key="order.placed.order.notification")
+        channel.queue_bind(exchange="order_topic", queue=QUEUE_NAME, routing_key="order.placed.grouporder.notification")
 
         channel.basic_consume(queue=QUEUE_NAME, on_message_callback=callback, auto_ack=True)
         logging.info(f"Listening for messages on queue '{QUEUE_NAME}'... [Notification Service]")

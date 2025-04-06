@@ -373,7 +373,7 @@ export default {
     await this.fetchVendorFromCart();
     await this.fetchSharedCart();
     this.subscribeToRealtime();
-    this,vendorId = this.$route.params.id;
+    this.vendorId = this.$route.params.id;
   },
   beforeUnmount() {
     if (this.channel) supabase.removeChannel(this.channel);

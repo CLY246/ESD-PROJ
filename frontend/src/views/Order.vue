@@ -94,10 +94,12 @@ export default {
         if (!orderHistoryResponse.ok) throw new Error("Failed to fetch order history");
 
         const orderHistoryData = await orderHistoryResponse.json();
+       
         const details = orderHistoryData.UserOrdersAPI.OrderDetails;
+        console.log("Order History Data:", details);
 
         if (Array.isArray(details)) {
-          const recommendationsResponse = await fetch("http://localhost:5013/test", {
+          const recommendationsResponse = await fetch("http://localhost:5013/recommendation", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ OrderHistory: details })
@@ -107,6 +109,7 @@ export default {
 
           const recommendationsResult = await recommendationsResponse.json();
           this.recommendedVendors = recommendationsResult.recommended;
+          console.log("Raw recommendation API result:", recommendationsResult);
           console.log("Recommendations:", recommendationsResult);
         } else {
           console.error("Order history response is not an array");
