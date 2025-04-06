@@ -15,10 +15,10 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Initialize Flasgger with OpenAPI specifications
 app.config['SWAGGER'] = {
-    'title': 'user Microservice API',
+    'title': 'User Microservice API',
     'version': 1.0,
     "openapi": "3.0.2",
-    'description': 'API to retrieve, update, and delete vendors and menu items',
+    'description': 'API to create and retrieve users',
 }
 
 swagger = Swagger(app)
@@ -51,17 +51,92 @@ jwt = JWTManager(app)
 
 @app.route('/api/health')
 def health_check():
+    """
+    Health check endpoint
+    ---
+    responses:
+      200:
+        description: API is running
+    """
     return jsonify({"message": "API is running!"})
 
 @app.route('/api/users', methods=['GET'])
 def get_users():
-    """Fetch all users"""
+    
+    """
+    Fetch all users
+    ---
+    responses:
+      200:
+        description: List of users
+        content:
+          application/json:
+            example:
+              - id: "123"
+                name: "John Doe"
+                email: "john@example.com"
+    """
     users = User.query.all()
     return jsonify([{"id": u.id, "name": u.name, "email": u.email} for u in users])
 
 @app.route("/register", methods=["POST"])
 def register():
-    """Registers a user with Supabase Auth and stores metadata including username."""
+    """
+    Registers a user with Supabase Auth and stores metadata including username.
+    ---
+    tags:
+      - Authentication
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              username:
+                type: string
+                example: johndoe
+              email:
+                type: string
+                example: johndoe@example.com
+              password:
+                type: string
+                example: secret123
+              name:
+                type: string
+                example: John Doe
+    responses:
+      201:
+        description: User registered successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: User registered successfully
+      400:
+        description: Missing fields or Supabase error
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+                  example: Missing required fields
+      500:
+        description: Server error
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+                  example: Internal server error
+    """
     try:
         data = request.get_json()
         username = data.get("username")
@@ -94,7 +169,80 @@ def register():
 
 @app.route("/login", methods=["POST"])
 def login():
-    """Logs in a user using email or username."""
+    
+    """
+    Logs in a user using email or username.
+    ---
+    tags:
+      - Authentication
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              identifier:
+                type: string
+                example: johndoe@example.com
+              password:
+                type: string
+                example: secret123
+    responses:
+      200:
+        description: Login successful
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                access_token:
+                  type: string
+                  example: jwt-token
+                userid:
+                  type: string
+                  example: user-id
+      400:
+        description: Missing required fields
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+                  example: Missing required fields
+      401:
+        description: Invalid credentials
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+                  example: Invalid login credentials
+      404:
+        description: User not found
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+                  example: User not found
+      500:
+        description: Server error
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+                  example: Internal server error
+    """
     try:
         data = request.get_json()
         identifier = data.get("identifier")  # Can be email OR username
@@ -126,13 +274,48 @@ def login():
 @app.route("/me", methods=["GET"])
 @jwt_required()
 def user_info():
-    """Fetch logged-in user details"""
+    """
+    Get Current Logged-In User Info
+    ---
+    security:
+      - bearerAuth: []
+    responses:
+      200:
+        description: User info retrieved successfully
+        content:
+          application/json:
+            example:
+              id: "user-id"
+              email: "user@example.com"
+              role: "authenticated"
+              aud: "authenticated"
+    """
     access_token = request.headers.get("Authorization").split(" ")[1]
     user_data = get_user_info(access_token)
     return jsonify(user_data)
 
 @app.route("/username/<user_id>", methods=["GET"])
 def get_user(user_id):
+    """
+    Get Username by User ID
+    ---
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      200:
+        description: Username found
+        content:
+          application/json:
+            example:
+              UserID: "abc123"
+              Username: "johndoe"
+      404:
+        description: User not found
+    """
     user = User.query.filter_by(id=user_id).first()
     
     if user:
@@ -142,9 +325,33 @@ def get_user(user_id):
     
 @app.route("/email/<user_id>", methods=["GET"])
 def get_useremail(user_id):
+    """
+    Get Email by User ID
+    ---
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      200:
+        description: Email found
+        content:
+          application/json:
+            example:
+              UserID: "abc123"
+              Email: "johndoe@example.com"
+      404:
+        description: User not found
+      500:
+        description: Internal Error
+    """
     user = User.query.filter_by(id=user_id).first()
     
     if user:
         return jsonify({"UserID": user.id, "Email": user.email})
     else:
         return jsonify({"error": "User not found"}), 404
+    
+

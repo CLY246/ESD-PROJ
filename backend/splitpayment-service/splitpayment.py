@@ -17,7 +17,7 @@ app.config['SWAGGER'] = {
     'title': 'Split Payment Microservice API',
     'version': 1.0,
     "openapi": "3.0.2",
-    'description': 'API to retrieve vendors and menu items',
+    'description': 'API for split payments',
 }
 
 swagger = Swagger(app)

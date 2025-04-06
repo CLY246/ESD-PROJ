@@ -1,12 +1,13 @@
-import eventlet
-eventlet.monkey_patch()
+#commenting these lines out first to test grouporder.py
+# import eventlet
+# eventlet.monkey_patch()
 
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
-from flask_socketio import SocketIO, emit, join_room
+# from flask_socketio import SocketIO, emit, join_room
 from supabase import create_client
 import os
 import json
@@ -15,6 +16,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 from datetime import datetime
+from flasgger import Swagger
 
 app = Flask(__name__)
 
@@ -26,6 +28,15 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
 
 db = SQLAlchemy(app)
+
+# Initialize Flasgger with OpenAPI specifications
+app.config['SWAGGER'] = {
+    'title': 'Group Order Microservice API',
+    'version': 1.0,
+    "openapi": "3.0.2",
+    'description': 'API for Retrieving, Creating and Deleting Group Order ',
+}
+swagger = Swagger(app)
 
 class SharedCart(db.Model):
     __tablename__ = "shared_carts"
@@ -51,6 +62,40 @@ with app.app_context():
 
 @app.route("/group-order/invite", methods=["POST"])
 def create_group_order():
+    """
+    Create a new group order and return an invite link
+    ---
+    tags:
+      - Group Order
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              vendorId:
+                type: integer
+              userId:
+                type: string
+            required:
+              - vendorId
+              - userId
+    responses:
+      200:
+        description: Group order created
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                invite_link:
+                  type: string
+                cartId:
+                  type: string
+      400:
+        description: Missing required fields
+    """
     data = request.get_json()
     vendor_id = data.get("vendorId")
     created_by = data.get("userId")  # The user starting the group order
@@ -69,6 +114,32 @@ def create_group_order():
 
 @app.route("/group-order/<cart_id>/vendor", methods=["GET"])
 def get_vendor_from_cart(cart_id):
+    """
+    Get vendor ID from a shared cart
+    ---
+    tags:
+      - Group Order
+    parameters:
+      - in: path
+        name: cart_id
+        required: true
+        schema:
+          type: string
+    responses:
+      200:
+        description: Vendor ID retrieved
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cartId:
+                  type: string
+                vendorId:
+                  type: integer
+      404:
+        description: Shared cart not found
+    """
     cart = SharedCart.query.filter_by(CartID=cart_id).first()
     if not cart:
         return jsonify({"error": "Shared cart not found"}), 404
@@ -78,6 +149,36 @@ def get_vendor_from_cart(cart_id):
 
 @app.route("/group-order/join/<cart_id>", methods=["POST"])
 def join_group_order(cart_id):
+    """
+    Join an existing group order
+    ---
+    tags:
+      - Group Order
+    parameters:
+      - in: path
+        name: cart_id
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              userId:
+                type: string
+            required:
+              - userId
+    responses:
+      200:
+        description: Successfully joined group order
+      400:
+        description: User ID missing
+      404:
+        description: Cart not found
+    """
     data = request.get_json()
     user_id = data.get("userId")  
 
@@ -92,6 +193,42 @@ def join_group_order(cart_id):
 
 @app.route("/group-order/<cart_id>/add-item", methods=["POST"])
 def add_item_to_cart(cart_id):
+    """
+    Add item to shared cart
+    ---
+    tags:
+      - Group Order
+    parameters:
+      - in: path
+        name: cart_id
+        required: true
+        schema:
+          type: string
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              userId:
+                type: string
+              itemId:
+                type: integer
+              quantity:
+                type: integer
+                default: 1
+            required:
+              - userId
+              - itemId
+    responses:
+      200:
+        description: Item added successfully
+      400:
+        description: Missing required fields
+      404:
+        description: Cart not found
+    """
     data = request.get_json()
     user_id = data.get("userId")
     item_id = data.get("itemId")
@@ -112,6 +249,47 @@ def add_item_to_cart(cart_id):
 
 @app.route("/group-order/<cart_id>", methods=["GET"])
 def get_cart_items(cart_id):
+    """
+    Get all items in a shared cart
+    ---
+    tags:
+      - Group Order
+    parameters:
+      - in: path
+        name: cart_id
+        required: true
+        schema:
+          type: string
+    responses:
+      200:
+        description: List of cart items
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                CartID:
+                  type: string
+                Items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      ID:
+                        type: integer
+                      Item_ID:
+                        type: integer
+                      User_ID:
+                        type: string
+                      Quantity:
+                        type: integer
+                      Added_at:
+                        type: string
+                        format: date-time
+      500:
+        description: Failed to fetch cart
+    """
+    
     try:
         cart_items = CartItem.query.filter_by(Cart_ID=cart_id).all()
 
@@ -137,6 +315,28 @@ def get_cart_items(cart_id):
     
 @app.route("/group-order/<cart_id>/remove-item/<item_id>", methods=["DELETE"])
 def remove_item_from_cart(cart_id, item_id):
+    """
+    Remove a specific item from the cart
+    ---
+    tags:
+      - Group Order
+    parameters:
+      - in: path
+        name: cart_id
+        required: true
+        schema:
+          type: string
+      - in: path
+        name: item_id
+        required: true
+        schema:
+          type: integer
+    responses:
+      200:
+        description: Item removed successfully
+      404:
+        description: Item not found in cart
+    """
     item = CartItem.query.filter_by(Cart_ID=cart_id, ID=item_id).first()
     if not item:
         return jsonify({"error": "Item not found in cart"}), 404
@@ -148,6 +348,21 @@ def remove_item_from_cart(cart_id, item_id):
 
 @app.route("/group-order/<cart_id>/clear", methods=["DELETE"])
 def clear_cart(cart_id):
+    """
+    Clear all items from the cart
+    ---
+    tags:
+      - Group Order
+    parameters:
+      - in: path
+        name: cart_id
+        required: true
+        schema:
+          type: string
+    responses:
+      200:
+        description: Cart cleared successfully
+    """
     CartItem.query.filter_by(Cart_ID=cart_id).delete()
     db.session.commit()
     return jsonify({"message": "Cart cleared successfully", "cartId": cart_id})
