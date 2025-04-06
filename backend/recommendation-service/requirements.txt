@@ -9,7 +9,11 @@ Flask-Migrate
 gunicorn
 tensorflow
 pandas
-numpy
+numpy==1.23.5
+joblib==1.2.0
 psycopg2-binary
+scikit-learn==1.2.2
+
+
 flasgger
 

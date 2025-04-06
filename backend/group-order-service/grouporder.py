@@ -3,7 +3,7 @@ eventlet.monkey_patch()
 
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from flask_socketio import SocketIO, emit, join_room
@@ -17,9 +17,8 @@ logging.basicConfig(level=logging.DEBUG)
 from datetime import datetime
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
-
-CORS(app)  
 
 app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres.ioskwqelrdcangizpzij:postgres@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
