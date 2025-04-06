@@ -26,7 +26,7 @@ app.config['SWAGGER'] = {
     'title': 'Payment Microservice API',
     'version': 1.0,
     "openapi": "3.0.2",
-    'description': 'API to retrieve order queue and menu items',
+    'description': 'API to retrieve payments and transactions',
 }
 
 swagger = Swagger(app)
