@@ -229,6 +229,7 @@ import requests
 import json
 import logging
 import pandas as pd
+from flasgger import Swagger
 
 app = Flask(__name__)
 app.config["DEBUG"] = True
@@ -244,6 +245,16 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
 
 db = SQLAlchemy(app)
+
+# Initialize Flasgger with OpenAPI specifications
+app.config['SWAGGER'] = {
+    'title': 'Recommedation Microservice API',
+    'version': 1.0,
+    "openapi": "3.0.2",
+    'description': 'API to retrieve vendors and menu items',
+}
+
+swagger = Swagger(app)
 
 
 # class Recommendation(db.Model):
@@ -285,6 +296,65 @@ class Vendor(db.Model):
 
 @app.route('/test', methods=['POST'])
 def recommendations():
+    """
+    Recommend Vendors Based on Order History
+    ---
+    tags:
+      - Recommendation
+    summary: Recommend vendors based on user's past orders
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              OrderHistory:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    VendorID:
+                      type: integer
+                      example: 101
+                    ImageURL:
+                      type: string
+                    VendorName:
+                      type: string
+                      example: "Sushi Tei"
+                    Cuisine:
+                      type: string
+                      example: "Japanese"
+    responses:
+      200:
+        description: List of recommended vendors
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recommended:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      VendorID:
+                        type: integer
+                        example: 102
+                      VendorName:
+                        type: string
+                        example: "Korean Bites"
+                      Cuisine:
+                        type: string
+                        example: "Korean"
+                      ImageURL:
+                        type: string
+                        example: "https://example.com/images/korean-bites.jpg"
+      400:
+        description: Bad Request (e.g. missing OrderHistory)
+      500:
+        description: Internal Server Error
+    """
     try:
         data = request.get_json()
 
@@ -362,6 +432,23 @@ def recommendations():
 
 @app.route("/")
 def home():
+    """
+    Health Check
+    ---
+    
+    summary: Health check endpoint for the microservice
+    responses:
+      200:
+        description: Service is running
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: "Recommendation microservice is running."
+    """
     return jsonify({"message": "✅ Recommendation microservice is running."})
 
 

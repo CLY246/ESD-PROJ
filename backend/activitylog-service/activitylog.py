@@ -18,6 +18,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
 db = SQLAlchemy(app)
 
+
 # ActivityLog Table
 class Activity(db.Model):
     __tablename__ = 'ActivityLog'  # Matches SQL exactly (case-sensitive)

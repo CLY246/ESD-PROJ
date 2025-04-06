@@ -11,5 +11,5 @@ tensorflow
 pandas
 numpy
 psycopg2-binary
-
+flasgger
 
