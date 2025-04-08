@@ -136,10 +136,6 @@ import { useRoute, useRouter } from "vue-router";
 import { StripeCheckout } from "@vue-stripe/vue-stripe";
 
 
-const vendor = ref({});
-const menuItems = ref({});
-// const cart = ref([]);
-
 const loading = ref(false);
 
 const supabase = createClient(
@@ -256,42 +252,62 @@ export default {
     },
 
     async submitPayment() {
-    try {
-      const idResponse = await axios.get("http://localhost:5005/next-order-id");
-      const orderId = idResponse.data.OrderID;
+  console.log("✅ GroupOrder.vue: submitPayment() triggered");
 
-      const response = await axios.post(
-        "http://localhost:5005/payments",
-        {
-          OrderID: orderId,
-          Amount: this.totalPrice,
+  try {
+    const userID = localStorage.getItem("user_id");
+
+    const orderItems = this.sharedCart.map((item) => ({
+      ItemID: item.Item_ID,
+      VendorID: this.vendor.VendorID,
+      Quantity: item.Quantity,
+      Username: item.Username,
+    }));
+
+    const orderData = {
+      UserID: userID,
+      VendorID: this.vendor.VendorID,
+      TotalAmount: parseFloat(this.totalPrice),
+      OrderItems: orderItems,
+    };
+
+    // Step 1: Save group order
+    const response = await axios.post(
+      "http://localhost:8000/place_order",
+      {
+        order: orderData,
+        isGroupOrder: true, // flag to tell backend this is group order
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
         },
-        {
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-
-      if (response.data.transaction) {
-        sessionStorage.setItem("transaction", JSON.stringify(response.data.transaction));
-        sessionStorage.setItem("cart", JSON.stringify(this.sharedCart));
-        sessionStorage.setItem("cuisine", this.vendor.Cuisine);
-        sessionStorage.setItem("vendorname", this.vendor.VendorName);
-        sessionStorage.setItem('vendorid', this.vendor.VendorID);
-        sessionStorage.setItem("isGroupOrder", "true");
-
       }
+    );
+    // const orderId = placeOrderRes.data.OrderID;
 
-      if (response.data.paymentUrl) {
-        
-        window.location.href = response.data.paymentUrl;
-      } else {
-        alert("Error initiating payment.");
-      }
-    } catch (error) {
-      console.error("Payment error:", error.response?.data || error);
-      alert("Failed to initiate payment.");
+    // Step 3: Store details in session
+    if (response.data) {
+      sessionStorage.setItem("transaction", JSON.stringify(response.data.transaction));
+      sessionStorage.setItem("cart", JSON.stringify(this.sharedCart));
+      sessionStorage.setItem("cuisine", this.vendor.Cuisine);
+      sessionStorage.setItem("vendorname", this.vendor.VendorName);
+      sessionStorage.setItem("vendorid", this.vendor.VendorID);
+      sessionStorage.setItem("isGroupOrder", "true");
     }
-  },
+
+    // Step 4: Redirect to Stripe
+    if (response.data.paymentUrl) {
+      window.location.href = response.data.paymentUrl;
+    } else {
+      alert("Error initiating payment.");
+    }
+  } catch (error) {
+    console.error("Payment error:", error.response?.data || error);
+    alert("Failed to initiate group payment.");
+  }
+},
+
 
     async addToSharedCart(item) {
       try {
@@ -368,6 +384,7 @@ export default {
     },
   },
   async mounted() {
+    console.log("🏁 MOUNTED: grouporder.vue");
     this.cartId = this.$route.params.cartId;
     console.log("cartId:", this.cartId);
     await this.fetchVendorFromCart();

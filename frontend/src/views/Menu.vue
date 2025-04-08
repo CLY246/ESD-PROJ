@@ -188,7 +188,7 @@ const startGroupOrder = async () => {
 
     localStorage.setItem("shared_cart_id", cartId);
 
-    router.push(`/group-order/join/${cartId}`);
+    router.replace(`/group-order/join/${cartId}`);
   } catch (error) {
     console.error("Error starting group order:", error);
   }
@@ -227,6 +227,7 @@ const startGroupOrder = async () => {
 //   }
 // };
 const placeorder = async () => {
+  console.log("🔥 Menu.vue: placeorder() triggered");
   try {
     const userID = localStorage.getItem("user_id");
 
@@ -267,6 +268,8 @@ const placeorder = async () => {
 
 
 onMounted(() => {
+  console.log("🏁 MOUNTED: Menu.vue");
+  console.trace();
   fetchVendor();
   fetchMenuItems();
 });

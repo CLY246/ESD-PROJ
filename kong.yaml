@@ -194,6 +194,12 @@ services:
         methods: ["POST", "OPTIONS"]
         strip_path: false
 
+      - name: finalize-group-order
+        paths: ["~/finalize_group_order/([a-zA-Z0-9\\-]+)"]
+        methods: ["POST", "OPTIONS"]
+        strip_path: false
+        regex_priority: 1
+
       - name: vendors-proxy
         paths: ["/vendors"]
         methods: ["GET", "OPTIONS"]

@@ -6,10 +6,6 @@ import requests
 import logging
 import stripe
 from flask_cors import CORS, cross_origin
-from flask import Flask
-
-app = Flask(__name__)
-CORS(app)
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -18,7 +14,7 @@ logger = logging.getLogger(__name__)
 # Add the root path to Python so it can find rabbitmq/
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-import rabbitmq.amqp_setup as amqp_setup  # ✅ now works
+import rabbitmq.amqp_setup as amqp_setup  
 
 from invokes import invoke_http
 from flask import Flask, request, jsonify
@@ -26,7 +22,8 @@ from flask_cors import CORS
 
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": "http://localhost:8080"}})
+
 
 
 # placeanorder.py
@@ -171,11 +168,20 @@ def handle_place_order():
                 "order": order,
                 "transaction_id": transaction_id
             }
+            return jsonify({
+                "code": 200,
+                "message": "Group order payment session created",
+                "paymentUrl": payment_url,
+                "OrderID": order_id,
+                "transaction_id": transaction_id
+            }), 200
+
         else:
             pending_orders[order_id] = {
                 "order": order,
                 "transaction_id": transaction_id
             }
+
 
 
         return jsonify({
@@ -185,6 +191,8 @@ def handle_place_order():
             "order_id": order_id,
             "transaction_id": transaction_id
         }), 200
+    
+
 
     except Exception as e:
         logging.exception("Place order error")
@@ -280,6 +288,7 @@ def finalize_order(order_id):
             "NotificationType": "Order Update",
             "Message": "Your order was successfully placed!"
         }
+
         channel.basic_publish(
             exchange="order_topic",
             routing_key="order.placed.order.notification",
@@ -294,10 +303,9 @@ def finalize_order(order_id):
 
     except Exception as e:
         logging.exception("Finalizing order error")
-        return jsonify({"message": "Failed to finalize order"}), 500
+        return jsonify({"message": "Failed to finalize order"}, str(e)), 500
     
 @app.route("/finalize_group_order/<int:order_id>", methods=["POST"])
-@cross_origin()
 def finalize_group_order(order_id):
     pending = pending_group_orders.get(order_id)
     logging.info(pending_group_orders)

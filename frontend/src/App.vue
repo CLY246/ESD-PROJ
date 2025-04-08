@@ -1,6 +1,6 @@
 <template>
     <Navbar v-if="showNavbar" />
-    <router-view class="router-container" />
+    <router-view :key="$route.fullPath" class="router-container" />
 </template>
 
 <script>

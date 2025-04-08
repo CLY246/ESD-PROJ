@@ -12,4 +12,5 @@ python-dotenv
 uuid
 psycopg2-binary
 requests
+flasgger
 
