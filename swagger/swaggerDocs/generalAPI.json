@@ -379,129 +379,90 @@
     },
     "/place_order": {
       "post": {
-        "summary": "Place an order",
-        "description": "Place an order and initiate payment.",
+        "summary": "Place an order and initiate payment",
+        "description": "Initiates the payment process for a normal or group order. Returns a payment URL and relevant order/transaction identifiers.",
         "operationId": "placeOrder",
         "tags": ["Place an Order"],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "order": {
-                    "type": "object",
-                    "description": "Order details",
-                    "properties": {
-                      "OrderID": {
-                        "type": "integer",
-                        "description": "The unique identifier for the order"
-                      },
-                      "UserID": {
-                        "type": "integer",
-                        "description": "The ID of the user placing the order"
-                      },
-                      "TotalAmount": {
-                        "type": "number",
-                        "description": "Total amount of the order"
-                      },
-                      "OrderItems": {
-                        "type": "array",
-                        "description": "List of items in the order",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "ItemID": {
-                              "type": "integer",
-                              "description": "The ID of the menu item"
-                            },
-                            "Quantity": {
-                              "type": "integer",
-                              "description": "Quantity of the item"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  },
-                  "isGroupOrder": {
-                    "type": "boolean",
-                    "description": "Flag to indicate if the order is a group order"
-                  }
+        "consumes": ["application/json"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "orderData",
+            "description": "Order details object",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "order": {
+                  "type": "object",
+                  "description": "Order details object"
+                },
+                "isGroupOrder": {
+                  "type": "boolean",
+                  "default": false
                 }
-              }
+              },
+              "required": ["order"]
             }
           }
-        },
+        ],
         "responses": {
           "200": {
-            "description": "Payment session created successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer",
-                      "example": 200
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Payment session created"
-                    },
-                    "paymentUrl": {
-                      "type": "string",
-                      "example": "http://payment.url"
-                    },
-                    "order_id": {
-                      "type": "integer",
-                      "example": 123
-                    },
-                    "transaction_id": {
-                      "type": "string",
-                      "example": "abc123"
-                    }
-                  }
+            "description": "Payment session created",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "integer",
+                  "example": 200
+                },
+                "message": {
+                  "type": "string",
+                  "example": "Payment session created"
+                },
+                "paymentUrl": {
+                  "type": "string",
+                  "example": "https://paymentgateway.com/pay/abc123"
+                },
+                "order_id": {
+                  "type": "string",
+                  "example": "ORD123456"
+                },
+                "transaction_id": {
+                  "type": "string",
+                  "example": "TXN7890"
                 }
               }
             }
           },
           "400": {
-            "description": "Bad request - Missing required fields",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer",
-                      "example": 400
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Missing required fields"
-                    }
-                  }
+            "description": "Missing required fields",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "integer",
+                  "example": 400
+                },
+                "message": {
+                  "type": "string",
+                  "example": "Missing required fields"
                 }
               }
             }
           },
           "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "code": {
-                      "type": "integer",
-                      "example": 500
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Payment failed"
-                    }
-                  }
+            "description": "Internal server error or payment failure",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "integer",
+                  "example": 500
+                },
+                "message": {
+                  "type": "string",
+                  "example": "Internal error"
                 }
               }
             }
@@ -509,6 +470,8 @@
         }
       }
     },
+    
+    
     "/finalize_order/{order_id}": {
       "post": {
         "summary": "Finalize an order",
@@ -1877,7 +1840,362 @@
             }
           }
         }
+      },
+
+
+      "/group-order/invite": {
+        "post": {
+          "summary": "Create a new group order and return an invite link",
+          "description": "Creates a new group order and returns an invite link for other users to join.",
+          "tags": ["Group Order"],
+          "consumes": ["application/json"],
+          "produces": ["application/json"],
+          "parameters": [
+            {
+              "in": "body",
+              "name": "body",
+              "required": true,
+              "schema": {
+                "type": "object",
+                "required": ["vendorId", "userId"],
+                "properties": {
+                  "vendorId": {
+                    "type": "integer",
+                    "example": 123
+                  },
+                  "userId": {
+                    "type": "string",
+                    "example": "user_abc"
+                  }
+                }
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Group order created",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "invite_link": {
+                    "type": "string",
+                    "example": "http://localhost:8080/group-order/join/fc8dcb88-6a7a-4c31-b67e-67f5b0b7d7f2"
+                  },
+                  "cartId": {
+                    "type": "string",
+                    "example": "fc8dcb88-6a7a-4c31-b67e-67f5b0b7d7f2"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Missing required fields",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "Missing required fields"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+
+      "/group-order/join/{cart_id}": {
+        "post": {
+          "summary": "Join an existing group order",
+          "description": "This API allows a user to join a shared cart by specifying the cart ID and providing their user ID.",
+          "operationId": "joinGroupOrder",
+          "tags": [
+            "Group Order"
+          ],
+          "consumes": [
+            "application/json"
+          ],
+          "parameters": [
+            {
+              "name": "cart_id",
+              "in": "path",
+              "required": true,
+              "description": "The unique ID of the shared cart",
+              "type": "string",
+              "example": "fc8dcb88-6a7a-4c31-b67e-67f5b0b7d7f2"
+            },
+            {
+              "in": "body",
+              "name": "body",
+              "description": "User ID joining the group order",
+              "required": true,
+              "schema": {
+                "type": "object",
+                "required": [
+                  "userId"
+                ],
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "description": "The unique identifier of the user joining the group order",
+                    "example": "user_abc"
+                  }
+                }
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successfully joined group order",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Successfully joined the group order"
+                  },
+                  "cartId": {
+                    "type": "string",
+                    "example": "fc8dcb88-6a7a-4c31-b67e-67f5b0b7d7f2"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "User ID missing",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "User ID is required"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Cart not found",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "Cart not found"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      
+      
+      
+      "/group-order/{cart_id}/add-item": {
+        "post": {
+          "summary": "Add item to shared cart",
+          "description": "Adds a food item to an existing shared group order cart.",
+          "operationId": "addItemToGroupCart",
+          "tags": [
+            "Group Order"
+          ],
+          "consumes": [
+            "application/json"
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "cart_id",
+              "required": true,
+              "description": "The unique ID of the shared cart",
+              "schema": {
+                "type": "string"
+              }
+            },
+            {
+              "in": "body",
+              "name": "body",
+              "description": "The item details to be added to the cart",
+              "required": true,
+              "schema": {
+                "type": "object",
+                "required": [
+                  "userId",
+                  "itemId"
+                ],
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "description": "The ID of the user adding the item",
+                    "example": "user_abc"
+                  },
+                  "itemId": {
+                    "type": "integer",
+                    "description": "The ID of the item to be added",
+                    "example": 101
+                  },
+                  "quantity": {
+                    "type": "integer",
+                    "description": "Quantity of the item",
+                    "default": 1,
+                    "example": 2
+                  }
+                }
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Item added successfully",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Item added successfully"
+                  },
+                  "cartId": {
+                    "type": "string",
+                    "example": "fc8dcb88-6a7a-4c31-b67e-67f5b0b7d7f2"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Missing required fields",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Missing required fields"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Cart not found",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Cart not found"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Failed to add item to cart",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "integer",
+                    "example": 500
+                  },
+                  "message": {
+                    "type": "string",
+                    "example": "❌ Failed to add item"
+                  },
+                  "error": {
+                    "type": "string",
+                    "example": "Database error"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },      
+      
+      "/group-order/{cart_id}": {
+        "get": {
+          "summary": "Get all items in a shared cart",
+          "description": "Retrieves all items associated with a specific shared cart ID.",
+          "operationId": "getItemsInGroupCart",
+          "tags": [
+            "Group Order"
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "cart_id",
+              "required": true,
+              "description": "The unique ID of the shared cart",
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of cart items",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "CartID": {
+                    "type": "string",
+                    "description": "The unique identifier of the shared cart",
+                    "example": "fc8dcb88-6a7a-4c31-b67e-67f5b0b7d7f2"
+                  },
+                  "Items": {
+                    "type": "array",
+                    "description": "List of items in the shared cart",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "ID": {
+                          "type": "integer",
+                          "description": "The unique identifier of the item in the cart",
+                          "example": 1
+                        },
+                        "Item_ID": {
+                          "type": "integer",
+                          "description": "The ID of the item",
+                          "example": 101
+                        },
+                        "User_ID": {
+                          "type": "string",
+                          "description": "The ID of the user who added the item",
+                          "example": "user_abc"
+                        },
+                        "Quantity": {
+                          "type": "integer",
+                          "description": "The quantity of the item in the cart",
+                          "example": 2
+                        },
+                        "Added_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "The date and time when the item was added to the cart",
+                          "example": "2025-04-08T12:34:56.789Z"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Failed to fetch cart",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "Failed to fetch cart"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
+      
+      
+      
       
       
       
