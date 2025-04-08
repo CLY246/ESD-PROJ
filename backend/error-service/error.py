@@ -10,11 +10,22 @@ from rabbitmq import amqp_setup
 from sqlalchemy import text
 from flasgger import Swagger
 
+
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres.rykllqzsqugqdvbvxdbv:Smelly246!@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
 db = SQLAlchemy(app)
+
+# Initialize Flasgger with OpenAPI specifications
+app.config['SWAGGER'] = {
+    'title': 'Error Microservice API',
+    'version': 1.0,
+    "openapi": "3.0.2",
+    'description': 'API for Creating errors ',
+}
+swagger = Swagger(app)
+
 
 class ErrorLog(db.Model):
     __tablename__ = 'ErrorLog'

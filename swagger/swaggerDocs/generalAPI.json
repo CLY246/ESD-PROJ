@@ -1,0 +1,1894 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "API Documentations",
+    "description": "API for Microservices that interact with AMQP",
+    "version": "1.0.0"
+  },
+  "host": "localhost:6008",
+  "basePath": "/",
+  "schemes": ["http"],
+  "servers": [
+    { "url": "http://localhost:5001", "description": "User Service" },
+    { "url": "http://localhost:5002", "description": "Vendor Service" },
+    {
+      "url": "http://localhost:5003",
+      "description": "Order Management Service"
+    },
+    {
+      "url": "http://localhost:5004",
+      "description": "Queue Management Service"
+    },
+    { "url": "http://localhost:5005", "description": "Payment Service" },
+    { "url": "http://localhost:5006", "description": "Notification Service" },
+    { "url": "http://localhost:5007", "description": "Error Service" },
+    { "url": "http://localhost:5008", "description": "Activity Log Service" },
+    { "url": "http://localhost:5009", "description": "Split Payment Service" },
+    { "url": "http://localhost:5010", "description": "Quick Reorder Service" },
+    { "url": "http://localhost:5011", "description": "Place an Order Service" },
+    { "url": "http://localhost:5012", "description": "Group Order Service" },
+    { "url": "http://localhost:5013", "description": "Recommendation Service" }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health check",
+        "description": "Checks if the Activity Log API is running",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "API is running",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "API is running!"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/log-activity": {
+      "post": {
+        "summary": "Log an activity",
+        "description": "Logs an activity to the database",
+        "operationId": "logActivity",
+        "tags": ["Activity Log"],
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Activity log details",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "Activity_Description": {
+                  "type": "string",
+                  "description": "Description of the activity"
+                },
+                "ActivityID": {
+                  "type": "integer",
+                  "description": "Unique identifier of the logged activity"
+                },
+                "Activity_Date": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Activity_Date when the activity was logged"
+                }
+              },
+              "required": ["Activity_Description"]
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Activity logged successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Activity logged successfully"
+                },
+                "activity": {
+                  "type": "object",
+                  "properties": {
+                    "ActivityID": {
+                      "type": "integer",
+                      "description": "Unique identifier of the logged activity"
+                    },
+                    "Activity_Date": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "Activity_Date when the activity was logged"
+                    },
+                    "Activity_Description": {
+                      "type": "string",
+                      "description": "Description of the activity"
+                    }
+                  },
+                  "example": {
+                    "ActivityID": 1,
+                    "Activity_Description": "User logged in",
+                    "Activity_Date": "2025-04-07T14:00:00Z"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Activity description is required",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Activity description is required"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Internal server error message"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/get-activities": {
+      "get": {
+        "summary": "Get all activities",
+        "description": "Retrieve all activity logs from the database",
+        "operationId": "getActivities",
+        "tags": ["Activity Log"],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "List of activity logs",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "activities": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "ActivityID": {
+                        "type": "integer",
+                        "description": "Unique identifier of the activity"
+                      },
+                      "Activity_Date": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "Activity_Date when the activity was logged"
+                      },
+                      "Activity_Description": {
+                        "type": "string",
+                        "description": "Description of the activity"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No activities found",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "No activities found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Internal server error message"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/db-check": {
+      "get": {
+        "summary": "Test database connection",
+        "description": "Checks if the connection to the database is successful.",
+        "operationId": "dbCheck",
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "Connection successful",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "Connected to DB ✅"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed connection",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Detailed error message here"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    ,
+
+    "/send_email": {
+      "post": {
+        "summary": "Send test email",
+        "description": "This endpoint is used to manually send a test email using the provided data.",
+        "operationId": "sendTestEmail",
+        "tags": ["Notification Microservice"],
+        "consumes": ["application/json"],
+        "produces": ["application/json"],
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Test email data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "UserEmail": {
+                  "type": "string",
+                  "description": "User Email"
+                },
+                "OrderID": {
+                  "type": "string",
+                  "description": "Order id"
+                },
+                "TotalAmount": {
+                  "type": "string",
+                  "description": "Total amount of the order"
+                }
+              },
+              "required": ["recipient", "subject", "body"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Email sent successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Email sent successfully!"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Email sending error",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Email Sending Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    ,
+    "/menuitem/{item_id}": {
+      "get": {
+        "summary": "Get a specific menu item by ID",
+        "description": "Retrieve the details of a specific menu item by its ID from the menu service.",
+        "operationId": "getMenuItem",
+        "tags": ["Place an Order"],
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "The ID of the menu item"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Details of the menu item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ItemID": {
+                      "type": "integer",
+                      "description": "ID of the menu item"
+                    },
+                    "ItemName": {
+                      "type": "string",
+                      "description": "Name of the menu item"
+                    },
+                    "Price": {
+                      "type": "number",
+                      "description": "Price of the menu item"
+                    },
+                    "Description": {
+                      "type": "string",
+                      "description": "Description of the menu item"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/place_order": {
+      "post": {
+        "summary": "Place an order",
+        "description": "Place an order and initiate payment.",
+        "operationId": "placeOrder",
+        "tags": ["Place an Order"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "order": {
+                    "type": "object",
+                    "description": "Order details",
+                    "properties": {
+                      "OrderID": {
+                        "type": "integer",
+                        "description": "The unique identifier for the order"
+                      },
+                      "UserID": {
+                        "type": "integer",
+                        "description": "The ID of the user placing the order"
+                      },
+                      "TotalAmount": {
+                        "type": "number",
+                        "description": "Total amount of the order"
+                      },
+                      "OrderItems": {
+                        "type": "array",
+                        "description": "List of items in the order",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "ItemID": {
+                              "type": "integer",
+                              "description": "The ID of the menu item"
+                            },
+                            "Quantity": {
+                              "type": "integer",
+                              "description": "Quantity of the item"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "isGroupOrder": {
+                    "type": "boolean",
+                    "description": "Flag to indicate if the order is a group order"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment session created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Payment session created"
+                    },
+                    "paymentUrl": {
+                      "type": "string",
+                      "example": "http://payment.url"
+                    },
+                    "order_id": {
+                      "type": "integer",
+                      "example": 123
+                    },
+                    "transaction_id": {
+                      "type": "string",
+                      "example": "abc123"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - Missing required fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 400
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Missing required fields"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "integer",
+                      "example": 500
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Payment failed"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finalize_order/{order_id}": {
+      "post": {
+        "summary": "Finalize an order",
+        "description": "Finalize a pending order and complete the transaction.",
+        "operationId": "finalizeOrder",
+        "tags": ["Place an Order"],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "The ID of the order to finalize"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order finalized successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Order finalized successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Order not found or already finalized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Order not found or already finalized"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Failed to finalize order"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finalize_group_order/{order_id}": {
+      "post": {
+        "summary": "Finalize a group order",
+        "description": "Finalize a pending group order and complete the transaction.",
+        "operationId": "finalizeGroupOrder",
+        "tags": ["Place an Order"],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "description": "The ID of the group order to finalize"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Group order finalized successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Group order finalized successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Group order not found or already finalized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Group order not found or already finalized"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Failed to finalize group order"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/vendors": {
+      "get": {
+        "summary": "Retrieve all vendors",
+        "description": "Fetches all vendors from the database",
+        "operationId": "getVendors",
+        "tags": ["Vendor Service"],
+        "produces": ["application/json"],
+        "responses": {
+          "200": {
+            "description": "Returns a list of vendors",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "Cuisine": {
+                    "type": "string",
+                    "description": "Cuisine served by vendor"
+                  },
+                  "ImageURL": {
+                    "type": "string",
+                    "description": "ImageURL of vendor"
+                  },
+                  "Location": {
+                    "type": "string",
+                    "description": "Phone number of the vendor"
+                  },
+                  "OpeningHours": {
+                    "type": "string",
+                    "description": "Phone number of the vendor"
+                  },
+                  "Rating": {
+                    "type": "number",
+                    "format":"float",
+                    "description": "Rating of the vendor"
+                  },
+                  "VendorID": {
+                    "type": "integer",
+                    "description": "Unique identifier for the vendor"
+                  },
+                  "VendorName": {
+                    "type": "string",
+                    "description": "Name of the vendor"
+                  }
+
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No vendors found",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "No vendors found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Something went wrong on the server"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    
+      "/vendors/{vendor_id}": {
+        "get": {
+          "summary": "Retrieve vendor details",
+          "description": "Fetches the details of a specific vendor by their ID",
+          "operationId": "getVendor",
+          "tags": ["Vendor Service"],
+          "parameters": [
+            {
+              "name": "vendor_id",
+              "in": "path",
+              "type": "integer",
+              "required": true,
+              "description": "The ID of the vendor (Integer)"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Returns information of the specified vendor",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "VendorID": {
+                    "type": "integer",
+                    "description": "Unique identifier of the vendor"
+                  },
+                  "VendorName": {
+                    "type": "string",
+                    "description": "Name of the vendor"
+                  },
+                  "Location": {
+                    "type": "string",
+                    "description": "Location of the vendor"
+                  },
+                  "OpeningHours": {
+                    "type": "string",
+                    "description": "Opening hours of the vendor"
+                  },
+                  "ImageURL": {
+                    "type": "string",
+                    "description": "URL of the vendor's image"
+                  },
+                  "Cuisine": {
+                    "type": "string",
+                    "description": "Type of cuisine the vendor serves"
+                  },
+                  "Rating": {
+                    "type": "number",
+                    "format": "float",
+                    "description": "Rating of the vendor (e.g., 4.4)"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Vendor not found",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "Vendor not found"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "/menuitem/{item_id}": {
+        "get": {
+          "summary": "Retrieve details of a menu item",
+          "description": "Fetches the details of a specific menu item by its ID",
+          "operationId": "getMenuItem",
+          "tags": ["Vendor Service"],
+          "parameters": [
+            {
+              "name": "item_id",
+              "in": "path",
+              "type": "integer",
+              "required": true,
+              "description": "The ID of the menu item"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Menu item details",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ItemID": {
+                    "type": "integer",
+                    "description": "Unique identifier of the menu item"
+                  },
+                  "ItemName": {
+                    "type": "string",
+                    "description": "Name of the menu item"
+                  },
+                  "Description": {
+                    "type": "string",
+                    "description": "Description of the menu item"
+                  },
+                  "Price": {
+                    "type": "number",
+                    "format": "float",
+                    "description": "Price of the menu item"
+                  },
+                  "ImageURL": {
+                    "type": "string",
+                    "description": "URL of the menu item's image"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Item not found",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Item not found"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+
+      "/menu/{vendor_id}": {
+        "get": {
+          "summary": "Retrieve all menu items for a specific vendor",
+          "description": "Fetches all menu items for a vendor, categorized by their type",
+          "operationId": "getMenuItems",
+          "tags": ["Vendor Service"],
+          "parameters": [
+            {
+              "name": "vendor_id",
+              "in": "path",
+              "type": "integer",
+              "required": true,
+              "description": "The ID of the vendor"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of menu items provided by vendor",
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "ItemID": {
+                        "type": "integer",
+                        "description": "Unique identifier of the menu item"
+                      },
+                      "ItemName": {
+                        "type": "string",
+                        "description": "Name of the menu item"
+                      },
+                      "Description": {
+                        "type": "string",
+                        "description": "Description of the menu item"
+                      },
+                      "Price": {
+                        "type": "number",
+                        "format": "float",
+                        "description": "Price of the menu item"
+                      },
+                      "ImageURL": {
+                        "type": "string",
+                        "description": "URL of the menu item's image"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "No menu items found for this vendor",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "No menu items found for this vendor."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/email/{user_id}": {
+        "get": {
+          "summary": "Retrieve an email by user ID",
+          "description": "Fetches the email associated with a specific user ID",
+          "operationId": "getUserEmail",
+          "tags": ["User Service"],
+          "parameters": [
+            {
+              "name": "user_id",
+              "in": "path",
+              "type": "string",
+              "required": true,
+              "description": "The ID of the user"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Email found",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "UserID": {
+                    "type": "string",
+                    "example": "abc123"
+                  },
+                  "Email": {
+                    "type": "string",
+                    "example": "johndoe@example.com"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "User not found",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "User not found"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal error",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "Internal server error"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+
+      "/splitpayments": {
+        "post": {
+          "summary": "Create a new split payment record",
+          "description": "This API creates a new split payment record and returns the created payment information.",
+          "operationId": "createSplitPayment",
+          "tags": [
+            "Split Payments"
+          ],
+          "consumes": [
+            "application/json"
+          ],
+          "parameters": [
+            {
+              "in": "body",
+              "name": "body",
+              "description": "The split payment details",
+              "required": true,
+              "schema": {
+                "type": "object",
+                "required": [
+                  "OrderID",
+                  "PayerUserID",
+                  "Amount"
+                ],
+                "properties": {
+                  "OrderID": {
+                    "type": "integer",
+                    "description": "The unique identifier for the order"
+                  },
+                  "PayerUserID": {
+                    "type": "integer",
+                    "description": "The user ID of the payer"
+                  },
+                  "Amount": {
+                    "type": "number",
+                    "format": "float",
+                    "description": "The amount to be split"
+                  },
+                  "SplitPaymentID": {
+                    "type": "integer",
+                    "description": "The unique identifier for the split payment"
+                  },
+                  "TransactionID": {
+                    "type": "integer",
+                    "description": "The transaction ID for the split payment"
+                  }
+                }
+              }
+            }
+          ],
+          "responses": {
+            "201": {
+              "description": "Split payment created",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Split payment created successfully"
+                  },
+                  "split_payment": {
+                    "type": "object",
+                    "properties": {
+                      "SplitPaymentID": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "OrderID": {
+                        "type": "integer",
+                        "example": 101
+                      },
+                      "PayerUserID": {
+                        "type": "integer",
+                        "example": 5
+                      },
+                      "Amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 10.5
+                      },
+                      "TransactionID": {
+                        "type": "integer",
+                        "example": 123456
+                      },
+                      "Status": {
+                        "type": "string",
+                        "example": "Pending"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Missing required fields",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "OrderID, PayerUserID, and Amount are required"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+
+      "/splitpayments/order/{order_id}": {
+        "get": {
+          "summary": "Retrieve split payments by order ID",
+          "description": "This API fetches the list of split payments for a given order ID.",
+          "operationId": "getSplitPaymentsByOrder",
+          "tags": [
+            "Split Payments"
+          ],
+          "parameters": [
+            {
+              "name": "order_id",
+              "in": "path",
+              "type": "integer",
+              "required": true,
+              "description": "The order ID to filter split payments"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of split payments for the order",
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "SplitPaymentID": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "OrderID": {
+                      "type": "integer",
+                      "example": 101
+                    },
+                    "PayerUserID": {
+                      "type": "integer",
+                      "example": 5
+                    },
+                    "Amount": {
+                      "type": "number",
+                      "format": "float",
+                      "example": 10.5
+                    },
+                    "TransactionID": {
+                      "type": "integer",
+                      "example": 123456
+                    },
+                    "Status": {
+                      "type": "string",
+                      "example": "Pending"
+                    }
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "No split payments found for this order",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "No split payments found for this order."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "/orders": {
+        "post": {
+          "summary": "Place a new order",
+          "description": "This API allows users to place a new order with items.",
+          "operationId": "placeOrder",
+          "tags": [
+            "Order Management"
+          ],
+          "consumes": [
+            "application/json"
+          ],
+          "parameters": [
+            {
+              "in": "body",
+              "name": "body",
+              "description": "The order details including items.",
+              "required": true,
+              "schema": {
+                "type": "object",
+                "required": [
+                  "UserID",
+                  "OrderID",
+                  "TotalAmount",
+                  "TransactionID",
+                  "VendorID"
+                ],
+                "properties": {
+                  "OrderID": {
+                    "type": "integer",
+                    "description": "The unique identifier for the order",
+                    "example": 101
+                  },
+                  "UserID": {
+                    "type": "string",
+                    "description": "The unique identifier of the user placing the order",
+                    "example": "user123"
+                  },
+                  "TotalAmount": {
+                    "type": "number",
+                    "format": "float",
+                    "description": "The total amount for the order",
+                    "example": 50.75
+                  },
+                  "TransactionID": {
+                    "type": "string",
+                    "description": "The transaction ID for this order",
+                    "example": "txn98765"
+                  },
+                  "VendorID": {
+                    "type": "integer",
+                    "description": "The unique identifier for the vendor handling the order",
+                    "example": 0
+                  },
+                  "VendorName": {
+                    "type": "string",
+                    "description": "The name of the vendor",
+                    "example": "Italian Bistro"
+                  },
+                  "Cuisine": {
+                    "type": "string",
+                    "description": "The type of cuisine",
+                    "example": "Italian"
+                  },
+                  "ImageURL": {
+                    "type": "string",
+                    "description": "URL of the vendor image",
+                    "example": "http://example.com/image.jpg"
+                  },
+                  "Items": {
+                    "type": "array",
+                    "description": "List of items in the order",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "OrderID": {
+                          "type": "integer",
+                          "description": "The unique identifier for the order",
+                          "example": 101
+                        },
+                        "ItemID": {
+                          "type": "integer",
+                          "description": "The unique identifier for the item",
+                          "example": 0
+                        },
+                        "ItemName": {
+                          "type": "string",
+                          "description": "The name of the item",
+                          "example": "Margherita Pizza"
+                        },
+                        "Quantity": {
+                          "type": "integer",
+                          "description": "The quantity of the item",
+                          "example": 2
+                        },
+                        "Price": {
+                          "type": "number",
+                          "format": "float",
+                          "description": "The price of the item",
+                          "example": 15.25
+                        },
+                        "VendorID": {
+                          "type": "integer",
+                          "description": "The unique identifier for the vendor selling the item",
+                          "example": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "responses": {
+            "201": {
+              "description": "Order and items saved successfully",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "integer",
+                    "example": 201
+                  },
+                  "message": {
+                    "type": "string",
+                    "example": "✅ Order and items saved"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Missing data in the request",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Missing data"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Failed to save the order",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "integer",
+                    "example": 500
+                  },
+                  "message": {
+                    "type": "string",
+                    "example": "❌ Failed to save order"
+                  },
+                  "error": {
+                    "type": "string",
+                    "example": "Database connection failed"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "/orders/{order_id}": {
+        "get": {
+          "summary": "Get order details by OrderID",
+          "description": "This API retrieves the details of a specific order based on the provided OrderID.",
+          "operationId": "getOrderDetails",
+          "tags": [
+            "Order Management"
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "order_id",
+              "description": "The unique identifier for the order",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "example": 101
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Order details retrieved successfully",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "OrderID": {
+                    "type": "integer",
+                    "description": "The unique identifier for the order",
+                    "example": 101
+                  },
+                  "UserID": {
+                    "type": "string",
+                    "description": "The user ID of the person who placed the order",
+                    "example": "user123"
+                  },
+                  "TotalAmount": {
+                    "type": "number",
+                    "format": "float",
+                    "description": "The total amount for the order",
+                    "example": 50.75
+                  },
+                  "TransactionID": {
+                    "type": "string",
+                    "description": "The transaction ID for this order",
+                    "example": "txn98765"
+                  },
+                  "VendorID": {
+                    "type": "string",
+                    "description": "The unique identifier for the vendor handling the order",
+                    "example": "vendor123"
+                  },
+                  "VendorName": {
+                    "type": "string",
+                    "description": "The name of the vendor",
+                    "example": "Italian Bistro"
+                  },
+                  "Cuisine": {
+                    "type": "string",
+                    "description": "The type of cuisine for the order",
+                    "example": "Italian"
+                  },
+                  "ImageURL": {
+                    "type": "string",
+                    "description": "The URL of the vendor's image",
+                    "example": "http://example.com/image.jpg"
+                  },
+                  "Items": {
+                    "type": "array",
+                    "description": "List of items in the order",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "ItemID": {
+                          "type": "string",
+                          "description": "The unique identifier for the item",
+                          "example": "item001"
+                        },
+                        "ItemName": {
+                          "type": "string",
+                          "description": "The name of the item",
+                          "example": "Margherita Pizza"
+                        },
+                        "Quantity": {
+                          "type": "integer",
+                          "description": "The quantity of the item",
+                          "example": 2
+                        },
+                        "Price": {
+                          "type": "number",
+                          "format": "float",
+                          "description": "The price of the item",
+                          "example": 15.25
+                        },
+                        "VendorID": {
+                          "type": "string",
+                          "description": "The vendor ID for the item",
+                          "example": "vendor123"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Order not found",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Order not found"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "Database connection failed"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/payments": {
+        "post": {
+          "summary": "Process a New Payment",
+          "description": "This API initiates a Stripe Checkout session and records the payment.",
+          "operationId": "processPayment",
+          "tags": [
+            "Payment"
+          ],
+          "consumes": [
+            "application/json"
+          ],
+          "parameters": [
+            {
+              "in": "body",
+              "name": "body",
+              "description": "The payment details",
+              "required": true,
+              "schema": {
+                "type": "object",
+                "required": [
+                  "Amount"
+                ],
+                "properties": {
+                  "Amount": {
+                    "type": "number",
+                    "format": "float",
+                    "description": "The amount to be paid",
+                    "example": 10.0
+                  }
+                }
+              }
+            }
+          ],
+          "responses": {
+            "201": {
+              "description": "Payment session created successfully",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Payment initiated successfully"
+                  },
+                  "paymentUrl": {
+                    "type": "string",
+                    "description": "The URL to redirect for the Stripe Checkout session",
+                    "example": "https://checkout.stripe.com/..."
+                  },
+                  "transaction": {
+                    "type": "object",
+                    "properties": {
+                      "TransactionID": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "OrderID": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "Amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 10.0
+                      },
+                      "PaymentMethod": {
+                        "type": "string",
+                        "example": "Stripe"
+                      },
+                      "PaymentStatus": {
+                        "type": "string",
+                        "example": "Pending"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Invalid input",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Amount is required"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "Payment processing failed"
+                  },
+                  "message": {
+                    "type": "string",
+                    "example": "Payment processing failed"
+                  },
+                  "transaction": {
+                    "type": "null",
+                    "example": null
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "/webhook": {
+        "post": {
+          "summary": "Stripe Webhook Listener",
+          "description": "Handles Stripe webhook events for session completion, verifying the event's signature and processing it accordingly.",
+          "operationId": "stripeWebhook",
+          "tags": [
+            "Stripe"
+          ],
+          "consumes": [
+            "application/json"
+          ],
+          "produces": [
+            "application/json"
+          ],
+          "responses": {
+            "200": {
+              "description": "Webhook received successfully",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "example": "received"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Invalid payload or signature",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "Invalid signature"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "/payments/transaction/{transaction_id}": {
+        "get": {
+          "summary": "Get Payment by Transaction ID",
+          "description": "Fetches the payment details for a specific transaction using its transaction ID.",
+          "operationId": "getPaymentByTransactionId",
+          "tags": [
+            "Payment"
+          ],
+          "parameters": [
+            {
+              "name": "transaction_id",
+              "in": "path",
+              "required": true,
+              "description": "ID of the transaction to retrieve",
+              "schema": {
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Transaction retrieved successfully",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "TransactionID": {
+                    "type": "integer"
+                  },
+                  "OrderID": {
+                    "type": "integer"
+                  },
+                  "Amount": {
+                    "type": "number",
+                    "format": "float"
+                  },
+                  "PaymentMethod": {
+                    "type": "string"
+                  },
+                  "PaymentStatus": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Transaction not found",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Transaction not found"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+
+      "/payments/{order_id}": {
+        "get": {
+          "summary": "Get Payment by Order ID",
+          "description": "Fetches the payment details for a specific order using its order ID.",
+          "operationId": "getPaymentStatusByOrderId",
+          "tags": [
+            "Payment"
+          ],
+          "parameters": [
+            {
+              "name": "order_id",
+              "in": "path",
+              "required": true,
+              "description": "ID of the order to retrieve the payment status for",
+              "schema": {
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Transaction found",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "TransactionID": {
+                    "type": "integer"
+                  },
+                  "OrderID": {
+                    "type": "integer"
+                  },
+                  "Amount": {
+                    "type": "number",
+                    "format": "float"
+                  },
+                  "PaymentMethod": {
+                    "type": "string"
+                  },
+                  "PaymentStatus": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Transaction not found",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Transaction not found"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "/payments": {
+        "get": {
+          "summary": "Get All Transactions",
+          "description": "Retrieves a list of all transactions from the database.",
+          "operationId": "getAllTransactions",
+          "tags": [
+            "Payment"
+          ],
+          "responses": {
+            "200": {
+              "description": "A list of transactions",
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "TransactionID": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "OrderID": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "Amount": {
+                      "type": "number",
+                      "format": "float",
+                      "example": 20.5
+                    },
+                    "PaymentMethod": {
+                      "type": "string",
+                      "example": "Stripe"
+                    },
+                    "PaymentStatus": {
+                      "type": "string",
+                      "example": "Success"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+
+      "/recommendation": {
+        "post": {
+          "summary": "Get Vendor Recommendations",
+          "description": "Provides vendor recommendations based on a user's order history.",
+          "tags": ["Recommendation"],
+          "consumes": ["application/json"],
+          "produces": ["application/json"],
+          "parameters": [
+            {
+              "in": "body",
+              "name": "body",
+              "required": true,
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "OrderHistory": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "Cuisine": {
+                          "type": "string",
+                          "example": "Japanese"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of recommended vendors based on order history",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "recommended": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "VendorID": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "VendorName": {
+                          "type": "string",
+                          "example": "Sushi Express"
+                        },
+                        "Cuisine": {
+                          "type": "string",
+                          "example": "Japanese"
+                        },
+                        "ImageURL": {
+                          "type": "string",
+                          "example": "https://example.com/image.jpg"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "OrderHistory data is missing or malformed",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "OrderHistory data is required"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "Internal server error"
+                  },
+                  "details": {
+                    "type": "string",
+                    "example": "Traceback or error message details"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      
+      
+      
+      
+      
+      
+      
+    
+    
+
+
+  }
+}

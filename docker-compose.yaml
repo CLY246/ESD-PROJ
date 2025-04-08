@@ -254,6 +254,26 @@ services:
       timeout: 5s
       retries: 3
 
+  
+
+  swagger-docs:
+    build: 
+      context: ./swagger
+      dockerfile: Dockerfile
+    ports:
+      - "6008:6008"
+    networks:
+      - app-network
+    restart: always
+    volumes: 
+      - ./swagger:/usr/src/app/swagger
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:6008/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+
   frontend:
     build: ./frontend
     ports:
