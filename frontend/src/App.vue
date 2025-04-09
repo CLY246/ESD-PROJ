@@ -21,7 +21,7 @@ export default {
 
     // Compute if navbar should be shown
     const showNavbar = computed(() => {
-      return !hideNavbarRoutes.includes(route.path) && !route.path.startsWith("/menu/");
+      return !hideNavbarRoutes.includes(route.path) && !route.path.startsWith("/menu/") && !route.path.startsWith("/group-order/");
     });
 
     return { showNavbar };

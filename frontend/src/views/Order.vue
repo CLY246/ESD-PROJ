@@ -118,132 +118,13 @@ export default {
         console.error("Error processing order history:", error);
       }
     },
-
-    addToCart(item) {
-      try {
-        console.log("🛒 Adding item:", JSON.stringify(item));
-      } catch (e) {
-        console.log("🛒 Adding item (raw):", item);
-      }
-
-      const existingItem = this.cart.find(cartItem => cartItem.ItemID === item.ItemID);
-      if (existingItem) {
-        existingItem.quantity += 1;
-      } else {
-        this.cart.push({ ...item, quantity: 1 });
-      }
-    },
-
-    removeFromCart(item) {
-      this.cart = this.cart.filter(cartItem => cartItem.ItemID !== item.ItemID);
-    },
-
-    async placeOrder() {
-      if (this.cart.length === 0) return alert("Cart is empty");
-
-      const token = localStorage.getItem("token");
-      if (!token) return alert("User not authenticated");
-
-      let userID;
-      try {
-        const decoded = jwtDecode(token);
-        console.log(" Decoded JWT token:", decoded);
-        userID = decoded.UserID || decoded.user_id || decoded.sub;
-
-        if (!userID) throw new Error("userID not present in token");
-      } catch (error) {
-        console.error("JWT decoding failed:", error);
-        alert("Invalid or expired user session. Please log in again.");
-        return;
-      }
-
-      localStorage.setItem("user_id", userID); 
-      console.log(" Saved userID to localStorage:", userID);
-
-      const firstItem = this.cart[0];
-      if (!firstItem || !firstItem.VendorID) {
-        return alert("Vendor information is missing from cart items.");
-      }
-
-      const vendorId = firstItem.VendorID;
-      const vendorName = firstItem.VendorName ?? "Vendor";
-      const cuisine = firstItem.Cuisine ?? "Unknown";
-
-      const totalAmount = this.cart.reduce((sum, item) => {
-        const qty = item.quantity ?? 1;
-        const price = parseFloat(item.Price) || 0;
-        return sum + price * qty;
-      }, 0);
-
-      const orderPayload = {
-        UserID: userID,
-        VendorID: parseInt(vendorId),
-        TotalAmount: totalAmount,
-        OrderItems: this.cart
-          .filter(item => item.ItemID && item.Price !== undefined)
-          .map(item => ({
-            ItemID: parseInt(item.ItemID),
-            ItemName: item.ItemName ?? "Unnamed Item",
-            Quantity: parseInt(item.quantity) || 1,
-            Price: parseFloat(item.Price) || 0
-          }))
-      };
-
-      console.log("🚀 Sending order payload to trigger_payment:", orderPayload);
-
-      try {
-        const response = await fetch("http://localhost:8000/trigger_payment", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(orderPayload),
-        });
-
-        const data = await response.json();
-        console.log("💳 Payment trigger response:", data);
-
-        const paymentUrl = data?.paymentUrl;
-
-        if (response.ok && typeof paymentUrl === "string") {
-          sessionStorage.setItem("cart", JSON.stringify(this.cart));
-          sessionStorage.setItem("vendorname", vendorName);
-          sessionStorage.setItem("cuisine", cuisine);
-          sessionStorage.setItem("isGroupOrder", "true");
-
-          sessionStorage.setItem("transaction", JSON.stringify({
-            Amount: totalAmount,
-            OrderID: data.OrderID,
-            TransactionID: data.TransactionID,
-            paymentUrl: paymentUrl,
-          }));
-
-          console.log(" DEBUG: Storage data before payment redirect:", {
-            user_id: userID,
-            vendorname: vendorName,
-            cuisine: cuisine,
-            cart: this.cart
-          });
-
-          window.location.href = paymentUrl;
-        } else {
-          console.error("Payment failed or invalid Stripe URL:", data);
-          alert("Payment failed: " + (data.message || data.error || "Unknown error"));
-        }
-      } catch (error) {
-        console.error("Payment request failed:", error);
-        alert("Could not initiate payment.");
-      }
-    }
-
   }
 };
 </script>
 
 
 <style scoped>
-@media (min-width: 1600px) {
+@media (min-width: 1440px) {
   .row {
     padding-left: 250px;
     padding-right: 250px;
