@@ -572,13 +572,13 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "VendorID": {
-                    "type": "integer",
-                    "description": "Unique identifier of the vendor"
-                  },
-                  "VendorName": {
+                  "Cuisine": {
                     "type": "string",
-                    "description": "Name of the vendor"
+                    "description": "Type of cuisine the vendor serves"
+                  },
+                  "ImageURL": {
+                    "type": "string",
+                    "description": "URL of the vendor's image"
                   },
                   "Location": {
                     "type": "string",
@@ -588,18 +588,18 @@
                     "type": "string",
                     "description": "Opening hours of the vendor"
                   },
-                  "ImageURL": {
-                    "type": "string",
-                    "description": "URL of the vendor's image"
-                  },
-                  "Cuisine": {
-                    "type": "string",
-                    "description": "Type of cuisine the vendor serves"
-                  },
                   "Rating": {
                     "type": "number",
                     "format": "float",
                     "description": "Rating of the vendor (e.g., 4.4)"
+                  },
+                  "VendorID": {
+                    "type": "integer",
+                    "description": "Unique identifier of the vendor"
+                  },
+                  "VendorName": {
+                    "type": "string",
+                    "description": "Name of the vendor"
                   }
                 }
               }
@@ -641,6 +641,14 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "Description": {
+                    "type": "string",
+                    "description": "Description of the menu item"
+                  },
+                  "ImageURL": {
+                    "type": "string",
+                    "description": "URL of the menu item's image"
+                  },
                   "ItemID": {
                     "type": "integer",
                     "description": "Unique identifier of the menu item"
@@ -649,18 +657,10 @@
                     "type": "string",
                     "description": "Name of the menu item"
                   },
-                  "Description": {
-                    "type": "string",
-                    "description": "Description of the menu item"
-                  },
                   "Price": {
                     "type": "number",
                     "format": "float",
                     "description": "Price of the menu item"
-                  },
-                  "ImageURL": {
-                    "type": "string",
-                    "description": "URL of the menu item's image"
                   }
                 }
               }
@@ -707,6 +707,18 @@
                   "items": {
                     "type": "object",
                     "properties": {
+                      "Category": {
+                        "type": "string",
+                        "description": "Category of the menu item"
+                      },
+                      "Description": {
+                        "type": "string",
+                        "description": "Description of the menu item"
+                      },
+                      "ImageURL": {
+                        "type": "string",
+                        "description": "URL of the menu item's image"
+                      },
                       "ItemID": {
                         "type": "integer",
                         "description": "Unique identifier of the menu item"
@@ -715,18 +727,15 @@
                         "type": "string",
                         "description": "Name of the menu item"
                       },
-                      "Description": {
-                        "type": "string",
-                        "description": "Description of the menu item"
-                      },
                       "Price": {
                         "type": "number",
                         "format": "float",
                         "description": "Price of the menu item"
                       },
-                      "ImageURL": {
-                        "type": "string",
-                        "description": "URL of the menu item's image"
+                      "VendorID":{
+                        "type": "integer",
+                        "description": "Vendor of item"
+
                       }
                     }
                   }
@@ -769,13 +778,13 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "UserID": {
-                    "type": "string",
-                    "example": "abc123"
-                  },
                   "Email": {
                     "type": "string",
                     "example": "johndoe@example.com"
+                  },
+                  "UserID": {
+                    "type": "string",
+                    "example": "abc123"
                   }
                 }
               }
@@ -834,26 +843,30 @@
                   "Amount"
                 ],
                 "properties": {
-                  "OrderID": {
-                    "type": "integer",
-                    "description": "The unique identifier for the order"
-                  },
-                  "PayerUserID": {
-                    "type": "integer",
-                    "description": "The user ID of the payer"
-                  },
                   "Amount": {
                     "type": "number",
                     "format": "float",
-                    "description": "The amount to be split"
+                    "example": 10.5
+                  },
+                  "OrderID": {
+                    "type": "integer",
+                    "example": 101
+                  },
+                  "PayerUserID": {
+                    "type": "integer",
+                    "example": 5
                   },
                   "SplitPaymentID": {
                     "type": "integer",
-                    "description": "The unique identifier for the split payment"
+                    "example": 1
+                  },
+                  "Status": {
+                    "type": "string",
+                    "example": "Pending"
                   },
                   "TransactionID": {
                     "type": "integer",
-                    "description": "The transaction ID for the split payment"
+                    "example": 123456
                   }
                 }
               }
@@ -872,9 +885,10 @@
                   "split_payment": {
                     "type": "object",
                     "properties": {
-                      "SplitPaymentID": {
-                        "type": "integer",
-                        "example": 1
+                      "Amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 10.5
                       },
                       "OrderID": {
                         "type": "integer",
@@ -884,18 +898,17 @@
                         "type": "integer",
                         "example": 5
                       },
-                      "Amount": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 10.5
-                      },
-                      "TransactionID": {
+                      "SplitPaymentID": {
                         "type": "integer",
-                        "example": 123456
+                        "example": 1
                       },
                       "Status": {
                         "type": "string",
                         "example": "Pending"
+                      },
+                      "TransactionID": {
+                        "type": "integer",
+                        "example": 123456
                       }
                     }
                   }
@@ -944,9 +957,10 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "SplitPaymentID": {
-                      "type": "integer",
-                      "example": 1
+                    "Amount": {
+                      "type": "number",
+                      "format": "float",
+                      "example": 10.5
                     },
                     "OrderID": {
                       "type": "integer",
@@ -956,18 +970,17 @@
                       "type": "integer",
                       "example": 5
                     },
-                    "Amount": {
-                      "type": "number",
-                      "format": "float",
-                      "example": 10.5
-                    },
-                    "TransactionID": {
+                    "SplitPaymentID": {
                       "type": "integer",
-                      "example": 123456
+                      "example": 1
                     },
                     "Status": {
                       "type": "string",
                       "example": "Pending"
+                    },
+                    "TransactionID": {
+                      "type": "integer",
+                      "example": 123456
                     }
                   }
                 }
@@ -1016,15 +1029,30 @@
                   "VendorID"
                 ],
                 "properties": {
+                  "Cuisine": {
+                    "type": "string",
+                    "description": "The type of cuisine for the order",
+                    "example": "Italian"
+                  },
+                  "ImageURL": {
+                    "type": "string",
+                    "description": "The URL of the vendor's image",
+                    "example": "http://example.com/image.jpg"
+                  },
+                  "OrderDateTime": {
+                    "type": "string",
+                    "description": "Order Date and Time",
+                    "example": "Thu, 03 Apr 2025 07:22:32 GMT"
+                  },
                   "OrderID": {
                     "type": "integer",
                     "description": "The unique identifier for the order",
                     "example": 101
                   },
-                  "UserID": {
+                  "OrderStatus": {
                     "type": "string",
-                    "description": "The unique identifier of the user placing the order",
-                    "example": "user123"
+                    "description": "Status of order",
+                    "example": "Completed"
                   },
                   "TotalAmount": {
                     "type": "number",
@@ -1037,65 +1065,20 @@
                     "description": "The transaction ID for this order",
                     "example": "txn98765"
                   },
+                  "UserID": {
+                    "type": "string",
+                    "description": "The user ID of the person who placed the order",
+                    "example": "user123"
+                  },
                   "VendorID": {
-                    "type": "integer",
+                    "type": "string",
                     "description": "The unique identifier for the vendor handling the order",
-                    "example": 0
+                    "example": "vendor123"
                   },
                   "VendorName": {
                     "type": "string",
                     "description": "The name of the vendor",
                     "example": "Italian Bistro"
-                  },
-                  "Cuisine": {
-                    "type": "string",
-                    "description": "The type of cuisine",
-                    "example": "Italian"
-                  },
-                  "ImageURL": {
-                    "type": "string",
-                    "description": "URL of the vendor image",
-                    "example": "http://example.com/image.jpg"
-                  },
-                  "Items": {
-                    "type": "array",
-                    "description": "List of items in the order",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "OrderID": {
-                          "type": "integer",
-                          "description": "The unique identifier for the order",
-                          "example": 101
-                        },
-                        "ItemID": {
-                          "type": "integer",
-                          "description": "The unique identifier for the item",
-                          "example": 0
-                        },
-                        "ItemName": {
-                          "type": "string",
-                          "description": "The name of the item",
-                          "example": "Margherita Pizza"
-                        },
-                        "Quantity": {
-                          "type": "integer",
-                          "description": "The quantity of the item",
-                          "example": 2
-                        },
-                        "Price": {
-                          "type": "number",
-                          "format": "float",
-                          "description": "The price of the item",
-                          "example": 15.25
-                        },
-                        "VendorID": {
-                          "type": "integer",
-                          "description": "The unique identifier for the vendor selling the item",
-                          "example": 0
-                        }
-                      }
-                    }
                   }
                 }
               }
@@ -1180,15 +1163,30 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "Cuisine": {
+                    "type": "string",
+                    "description": "The type of cuisine for the order",
+                    "example": "Italian"
+                  },
+                  "ImageURL": {
+                    "type": "string",
+                    "description": "The URL of the vendor's image",
+                    "example": "http://example.com/image.jpg"
+                  },
+                  "OrderDateTime": {
+                    "type": "string",
+                    "description": "Order Date and Time",
+                    "example": "Thu, 03 Apr 2025 07:22:32 GMT"
+                  },
                   "OrderID": {
                     "type": "integer",
                     "description": "The unique identifier for the order",
                     "example": 101
                   },
-                  "UserID": {
+                  "OrderStatus": {
                     "type": "string",
-                    "description": "The user ID of the person who placed the order",
-                    "example": "user123"
+                    "description": "Status of order",
+                    "example": "Completed"
                   },
                   "TotalAmount": {
                     "type": "number",
@@ -1201,6 +1199,11 @@
                     "description": "The transaction ID for this order",
                     "example": "txn98765"
                   },
+                  "UserID": {
+                    "type": "string",
+                    "description": "The user ID of the person who placed the order",
+                    "example": "user123"
+                  },
                   "VendorID": {
                     "type": "string",
                     "description": "The unique identifier for the vendor handling the order",
@@ -1210,51 +1213,6 @@
                     "type": "string",
                     "description": "The name of the vendor",
                     "example": "Italian Bistro"
-                  },
-                  "Cuisine": {
-                    "type": "string",
-                    "description": "The type of cuisine for the order",
-                    "example": "Italian"
-                  },
-                  "ImageURL": {
-                    "type": "string",
-                    "description": "The URL of the vendor's image",
-                    "example": "http://example.com/image.jpg"
-                  },
-                  "Items": {
-                    "type": "array",
-                    "description": "List of items in the order",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "ItemID": {
-                          "type": "string",
-                          "description": "The unique identifier for the item",
-                          "example": "item001"
-                        },
-                        "ItemName": {
-                          "type": "string",
-                          "description": "The name of the item",
-                          "example": "Margherita Pizza"
-                        },
-                        "Quantity": {
-                          "type": "integer",
-                          "description": "The quantity of the item",
-                          "example": 2
-                        },
-                        "Price": {
-                          "type": "number",
-                          "format": "float",
-                          "description": "The price of the item",
-                          "example": 15.25
-                        },
-                        "VendorID": {
-                          "type": "string",
-                          "description": "The vendor ID for the item",
-                          "example": "vendor123"
-                        }
-                      }
-                    }
                   }
                 }
               }
@@ -1426,21 +1384,26 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "TransactionID": {
-                    "type": "integer"
-                  },
-                  "OrderID": {
-                    "type": "integer"
-                  },
                   "Amount": {
                     "type": "number",
-                    "format": "float"
+                    "format": "float",
+                    "example": 20.5
+                  },
+                  "OrderID": {
+                    "type": "integer",
+                    "example": 1
                   },
                   "PaymentMethod": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Stripe"
                   },
                   "PaymentStatus": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Success"
+                  },
+                  "TransactionID": {
+                    "type": "integer",
+                    "example": 1
                   }
                 }
               }
@@ -1487,21 +1450,26 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "TransactionID": {
-                    "type": "integer"
-                  },
-                  "OrderID": {
-                    "type": "integer"
-                  },
                   "Amount": {
                     "type": "number",
-                    "format": "float"
+                    "format": "float",
+                    "example": 20.5
+                  },
+                  "OrderID": {
+                    "type": "integer",
+                    "example": 1
                   },
                   "PaymentMethod": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Stripe"
                   },
                   "PaymentStatus": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Success"
+                  },
+                  "TransactionID": {
+                    "type": "integer",
+                    "example": 1
                   }
                 }
               }
@@ -1538,18 +1506,14 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "TransactionID": {
-                      "type": "integer",
-                      "example": 1
-                    },
-                    "OrderID": {
-                      "type": "integer",
-                      "example": 1
-                    },
                     "Amount": {
                       "type": "number",
                       "format": "float",
                       "example": 20.5
+                    },
+                    "OrderID": {
+                      "type": "integer",
+                      "example": 1
                     },
                     "PaymentMethod": {
                       "type": "string",
@@ -1558,6 +1522,10 @@
                     "PaymentStatus": {
                       "type": "string",
                       "example": "Success"
+                    },
+                    "TransactionID": {
+                      "type": "integer",
+                      "example": 1
                     }
                   }
                 }
@@ -1961,38 +1929,76 @@
                     "description": "The unique identifier of the shared cart",
                     "example": "fc8dcb88-6a7a-4c31-b67e-67f5b0b7d7f2"
                   },
+                  "CreatedBy": {
+                    "type": "string",
+                    "description": "Who Created the cart",
+                    "example": "cd5e64cc-0982-48f8-ad05-804fb12c9fea"
+                  },
+
                   "Items": {
                     "type": "array",
                     "description": "List of items in the shared cart",
                     "items": {
                       "type": "object",
                       "properties": {
-                        "ID": {
-                          "type": "integer",
-                          "description": "The unique identifier of the item in the cart",
-                          "example": 1
-                        },
-                        "Item_ID": {
-                          "type": "integer",
-                          "description": "The ID of the item",
-                          "example": 101
-                        },
-                        "User_ID": {
-                          "type": "string",
-                          "description": "The ID of the user who added the item",
-                          "example": "user_abc"
-                        },
-                        "Quantity": {
-                          "type": "integer",
-                          "description": "The quantity of the item in the cart",
-                          "example": 2
-                        },
                         "Added_at": {
                           "type": "string",
                           "format": "date-time",
-                          "description": "The date and time when the item was added to the cart",
-                          "example": "2025-04-08T12:34:56.789Z"
-                        }
+                          "description": "The timestamp when the item was added",
+                          "example": "2025-04-09T15:19:00.112751+00:00"
+                         },
+                         "Description": {
+                          "type": "string",
+                          "description": "Description of the food item",
+                          "example": ""
+                         },
+                         "ID": {
+                          "type": "integer",
+                          "description": "The unique identifier for the record",
+                          "example": 308
+                         },
+                         "ImageURL": {
+                          "type": "string",
+                          "description": "URL to the image of the food item",
+                          "example": "https://eatbook.sg/wp-content/uploads/2022/12/khoon-coffeehouse-express-biscoff-bun-1024x683.jpg"
+                         },
+                         "ItemID": {
+                          "type": "integer",
+                          "description": "The identifier for the food item",
+                          "example": 17
+                         },
+                         "ItemName": {
+                          "type": "string",
+                          "description": "Name of the food item",
+                          "example": "Lotus Biscoff Bun"
+                         },
+                         "Item_ID": {
+                          "type": "integer",
+                          "description": "Alternative identifier for the food item",
+                          "example": 17
+                         },
+                         "Price": {
+                          "type": "number",
+                          "format": "float",
+                          "description": "Price of the food item",
+                          "example": 2.2
+                         },
+                         "Quantity": {
+                          "type": "integer",
+                          "description": "Quantity of the food item ordered",
+                          "example": 1
+                         },
+                         "User_ID": {
+                          "type": "string",
+                          "format": "uuid",
+                          "description": "Unique identifier of the user",
+                          "example": "cd5e64cc-0982-48f8-ad05-804fb12c9fea"
+                         },
+                         "Username": {
+                          "type": "string",
+                          "description": "Username of the user",
+                          "example": "monkey"
+                         }
                       }
                     }
                   }
@@ -2013,7 +2019,292 @@
             }
           }
         }
-      }
+      },
+
+      "/group-order/{cart_id}/vendor": {
+        "get": {
+          "summary": "Get vendor ID and menu from a shared cart",
+          "description": "Retrieves vendor information and menu items associated with a specific shared cart ID.",
+          "operationId": "getVendorAndMenu",
+          "tags": [
+            "Group Order"
+          ],
+          "parameters": [
+            {
+              "in": "path",
+              "name": "cart_id",
+              "required": true,
+              "description": "The unique ID of the shared cart",
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Vendor details and menu items",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "menuItems": {
+                    "type": "object",
+                    "description": "Menu items grouped by category",
+                    "additionalProperties": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ItemID": {
+                            "type": "integer",
+                            "description": "The unique identifier of the menu item",
+                            "example": 17
+                          },
+                          "ItemName": {
+                            "type": "string",
+                            "description": "Name of the menu item",
+                            "example": "Lotus Biscoff Bun"
+                          },
+                          "Description": {
+                            "type": "string",
+                            "description": "Description of the menu item",
+                            "example": ""
+                          },
+                          "Price": {
+                            "type": "number",
+                            "format": "float",
+                            "description": "Price of the menu item",
+                            "example": 2.2
+                          },
+                          "Category": {
+                            "type": "string",
+                            "description": "Category of the menu item",
+                            "example": "Bun"
+                          },
+                          "ImageURL": {
+                            "type": "string",
+                            "description": "URL to the image of the menu item",
+                            "example": "https://eatbook.sg/wp-content/uploads/2022/12/khoon-coffeehouse-express-biscoff-bun-1024x683.jpg"
+                          },
+                          "VendorID": {
+                            "type": "integer",
+                            "description": "ID of the vendor offering this item",
+                            "example": 4
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "vendor": {
+                    "type": "object",
+                    "description": "Vendor information",
+                    "properties": {
+                      "VendorID": {
+                        "type": "integer",
+                        "description": "Vendor ID",
+                        "example": 4
+                      },
+                      "VendorName": {
+                        "type": "string",
+                        "description": "Name of the vendor",
+                        "example": "Khoon Coffeehouse Express SMU"
+                      },
+                      "Location": {
+                        "type": "string",
+                        "description": "Vendor location",
+                        "example": "90 Stamford Rd, #01-72, Singapore 178903"
+                      },
+                      "Cuisine": {
+                        "type": "string",
+                        "description": "Cuisine type",
+                        "example": "Western"
+                      },
+                      "OpeningHours": {
+                        "type": "string",
+                        "description": "Vendor opening hours",
+                        "example": "Monday-Saturday: 8am-8pm"
+                      },
+                      "Rating": {
+                        "type": "number",
+                        "format": "float",
+                        "description": "Vendor rating",
+                        "example": 0.0
+                      },
+                      "ImageURL": {
+                        "type": "string",
+                        "description": "URL to the image of the vendor",
+                        "example": "https://eatbook.sg/wp-content/uploads/2022/12/khoon-coffeehouse-express-storefront.jpg"
+                      }
+                    }
+                  },
+                  "vendorId": {
+                    "type": "integer",
+                    "description": "The unique identifier of the vendor",
+                    "example": 4
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Shared cart not found",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "Shared cart not found"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Failed to fetch vendor details",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "Failed to fetch vendor details"
+                  }
+                }
+              }
+            }
+          }
+        }
+       },
+
+       "/group-order/submit-payment": {
+        "post": {
+          "summary": "Submit payment for a group order",
+          "description": "Processes payment for items in a shared cart and forwards the order to the order processing service.",
+          "operationId": "submitGroupPayment",
+          "tags": [
+            "Group Order"
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "order": {
+                      "type": "object",
+                      "description": "The complete order information",
+                      "properties": {
+                        "CartID": {
+                          "type": "string",
+                          "description": "The unique identifier of the shared cart",
+                          "example": "fc8dcb88-6a7a-4c31-b67e-67f5b0b7d7f2"
+                        },
+                        "Items": {
+                          "type": "array",
+                          "description": "List of items in the order",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ItemID": {
+                                "type": "integer",
+                                "description": "The identifier for the food item",
+                                "example": 17
+                              },
+                              "ItemName": {
+                                "type": "string",
+                                "description": "Name of the food item",
+                                "example": "Lotus Biscoff Bun"
+                              },
+                              "Price": {
+                                "type": "number",
+                                "format": "float",
+                                "description": "Price of the food item",
+                                "example": 2.2
+                              },
+                              "Quantity": {
+                                "type": "integer",
+                                "description": "Quantity of the food item ordered",
+                                "example": 1
+                              },
+                              "User_ID": {
+                                "type": "string",
+                                "format": "uuid",
+                                "description": "Unique identifier of the user who added this item",
+                                "example": "cd5e64cc-0982-48f8-ad05-804fb12c9fea"
+                              }
+                            }
+                          }
+                        },
+                        "TotalAmount": {
+                          "type": "number",
+                          "format": "float",
+                          "description": "Total amount of the order",
+                          "example": 12.5
+                        },
+                        "PaymentMethod": {
+                          "type": "string",
+                          "description": "Method of payment",
+                          "example": "credit_card"
+                        }
+                      },
+                      "required": ["CartID", "Items"]
+                    }
+                  },
+                  "required": ["order"]
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Order successfully placed",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "OrderID": {
+                    "type": "string",
+                    "description": "The unique identifier of the created order",
+                    "example": "ord-12345"
+                  },
+                  "OrderStatus": {
+                    "type": "string",
+                    "description": "Status of the order",
+                    "example": "pending"
+                  },
+                  "EstimatedWaitTime": {
+                    "type": "integer",
+                    "description": "Estimated wait time in minutes",
+                    "example": 15
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Invalid request data",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "Missing order data"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Failed to process the order",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "Failed to place order"
+                  }
+                }
+              }
+            }
+          }
+        }
+       }
+
+
       
       
       
