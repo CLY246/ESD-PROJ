@@ -1,5 +1,6 @@
 FROM python:3.10-slim
 WORKDIR /app
+RUN pip install --upgrade pip setuptools wheel
 COPY . .
 RUN apt-get update && apt-get install -y \
     build-essential \

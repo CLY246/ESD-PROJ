@@ -40,6 +40,7 @@ class SharedCart(db.Model):
     Created_at = db.Column(db.DateTime, default=datetime.utcnow)
     VendorID = db.Column(db.Integer, nullable=False)
     Created_by = db.Column(db.UUID(as_uuid=True), nullable=False)
+    PaymentInProgress = db.Column(db.Boolean, default=False)
 
 class CartItem(db.Model):
     __tablename__ = "cart_items"
@@ -308,6 +309,8 @@ def get_cart_items(cart_id):
         description: Failed to fetch cart
     """
     try:
+        cart = SharedCart.query.filter_by(CartID=cart_id).first()
+        created_by = cart.Created_by if cart else None
         cart_items = CartItem.query.filter_by(Cart_ID=cart_id).all()
 
         finalised_items = []
@@ -360,6 +363,7 @@ def get_cart_items(cart_id):
 
         return jsonify({
             "CartID": cart_id,
+            "CreatedBy": str(created_by),
             "Items": finalised_items
         })
 
@@ -429,7 +433,15 @@ def submit_group_payment():
         if not order:
             return jsonify({"error": "Missing order data"}), 400
 
-        # Forward to place_order microservice
+        cart_id = order.get("CartID")
+        if not cart_id:
+            return jsonify({"error": "Missing Cart ID"}), 400
+
+        cart = SharedCart.query.filter_by(CartID=cart_id).first()
+        if cart:
+            cart.PaymentInProgress = True
+            db.session.commit()
+
         place_order_response = requests.post(
             "http://placeanorder-service:5000/place_order",
             json={

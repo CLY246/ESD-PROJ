@@ -61,7 +61,7 @@
                         alt="Item Image"
                         class="menu-item-img rounded"
                       />
-                      <button @click="addToSharedCart(item)" class="addtocart">
+                      <button @click="addToSharedCart(item)" :disabled="paymentInProgress" class="addtocart">
                         <fa :icon="['fas', 'plus']" style="color: gray"></fa>
                       </button>
                     </div>
@@ -92,7 +92,7 @@
                   <li v-for="item in items" :key="item.ID">
                     {{ item.ItemName }} - ${{ item.Price }} x
                     {{ item.Quantity }}
-                    <button @click="removeFromSharedCart(item.ID)">
+                    <button @click="removeFromSharedCart(item.ID)" :disabled="paymentInProgress">
                       Remove
                     </button>
                   </li>
@@ -107,18 +107,24 @@
             <!-- Sticky Footer (Total & Payment Button) -->
             <div class="cart-footer">
               <p class="fw-bold">Total: ${{ totalPrice }}</p>
-              <StripeCheckout
-                ref="checkoutRef"
-                mode="payment"
-                :pk="publishableKey"
-                :line-items="lineItems"
-                :success-url="successURL"
-                :cancel-url="cancelURL"
-                @loading="(v) => (loading = v)"
-              />
-              <button class="btn btn-dark w-100" @click="submitPayment">
-                Review Payment and Address
-              </button>
+              <div v-if="userId === createdBy">
+                <StripeCheckout
+                  ref="checkoutRef"
+                  mode="payment"
+                  :pk="publishableKey"
+                  :line-items="lineItems"
+                  :success-url="successURL"
+                  :cancel-url="cancelURL"
+                  @loading="(v) => (loading = v)"
+                />
+                <button class="btn btn-dark w-100" @click="submitPayment">
+                  Review Payment and Address
+                </button>
+              </div>
+
+              <div v-else class="text-muted small text-center mt-2">
+                Only the cart creator can proceed with payment.
+              </div>
             </div>
           </div>
         </div>
@@ -156,6 +162,9 @@ export default {
       menuItems: {},
       sharedCart: [],
       channel: null,
+      createdBy: "",
+      userId: "",
+      paymentInProgress: false,
     };
   },
   computed: {
@@ -191,6 +200,7 @@ export default {
         console.log("Fetched cart data:", res.data);
 
         this.sharedCart = res.data.Items || [];
+        this.createdBy = res.data.CreatedBy;
       } catch (err) {
         console.error("Error fetching shared cart:", err);
       }
@@ -222,6 +232,7 @@ export default {
         }));
 
         const orderData = {
+          CartID: this.cartId,
           UserID: userID,
           VendorID: this.vendor.VendorID,
           TotalAmount: parseFloat(this.totalPrice),
@@ -236,7 +247,10 @@ export default {
 
         // Store session data & redirect
         if (response.data) {
-          sessionStorage.setItem("transaction", JSON.stringify(response.data.transaction));
+          sessionStorage.setItem(
+            "transaction",
+            JSON.stringify(response.data.transaction)
+          );
           sessionStorage.setItem("cart", JSON.stringify(this.sharedCart));
           sessionStorage.setItem("cuisine", this.vendor.Cuisine);
           sessionStorage.setItem("vendorname", this.vendor.VendorName);
@@ -324,15 +338,33 @@ export default {
             }
           }
         )
+        // Listen for changes to PaymentInProgress on shared_carts
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "shared_carts",
+            filter: `CartID=eq.${this.cartId}`,
+          },
+          (payload) => {
+            console.log(
+              "Payment status update received:",
+              payload.new.PaymentInProgress
+            );
+
+            this.paymentInProgress = payload.new.PaymentInProgress === true;
+          }
+        )
         .subscribe((status) => {
           console.log("Realtime subscription status:", status);
         });
     },
   },
   async mounted() {
-    console.log("🏁 MOUNTED: grouporder.vue");
     this.cartId = this.$route.params.cartId;
     console.log("cartId:", this.cartId);
+    this.userId = localStorage.getItem("user_id");
     await this.fetchVendorFromCart();
     await this.fetchSharedCart();
     this.subscribeToRealtime();
