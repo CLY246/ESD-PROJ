@@ -8,11 +8,10 @@
         class="restaurant-img"
       />
       <div>
-        <p>Cart ID: {{ cartId }}</p>
         <p class="restaurant-meta">{{ vendor.Cuisine }}</p>
         <h1 class="restaurant-title">{{ vendor.VendorName }}</h1>
-        <p>Waiting Time: 30 min</p>
-        <p class="restaurant-rating">⭐ {{ vendor.Rating }}</p>
+        <p>Waiting Time: 10 min</p>
+        <p>Cart ID: {{ cartId }}</p>
       </div>
     </div>
 
@@ -30,106 +29,129 @@
           </button>
         </div>
       </div>
-
-      <!-- Menu Layout -->
-      <div class="row g-4">
-        <!-- Menu Items Section -->
-        <div class="col-lg-8">
-          <div
-            v-for="(items, category) in menuItems"
-            :key="category"
-            :id="category"
-            class="mb-4"
-          >
-            <h2 class="fw-bold mb-3">{{ category }}</h2>
-            <div class="row g-3">
-              <div v-for="item in items" :key="item.ItemID" class="col-md-6">
-                <div class="card shadow-sm p-3">
-                  <div
-                    class="d-flex justify-content-between align-items-center"
-                  >
-                    <div>
-                      <h5>{{ item.ItemName }}</h5>
-                      <p class="description text-muted small">
-                        {{ item.Description }}
-                      </p>
-                      <p>${{ item.Price.toFixed(2) }}</p>
-                    </div>
-                    <div class="item-img">
-                      <img
-                        :src="item.ImageURL"
-                        alt="Item Image"
-                        class="menu-item-img rounded"
-                      />
-                      <button @click="addToSharedCart(item)" :disabled="paymentInProgress" class="addtocart">
-                        <fa :icon="['fas', 'plus']" style="color: gray"></fa>
-                      </button>
-                    </div>
+    </div>
+    <!-- Menu Layout -->
+    <div class="menu row g-4">
+      <!-- Menu Items Section -->
+      <div class="col-lg-8">
+        <div
+          v-for="(items, category) in menuItems"
+          :key="category"
+          :id="category"
+          class="mb-4"
+        >
+          <h2 class="fw-bold mb-3">{{ category }}</h2>
+          <div class="row g-3">
+            <div v-for="item in items" :key="item.ItemID" class="col-md-6">
+              <div class="card shadow-sm p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <h5>{{ item.ItemName }}</h5>
+                    <p class="description text-muted small">
+                      {{ item.Description }}
+                    </p>
+                    <p>${{ item.Price.toFixed(2) }}</p>
+                  </div>
+                  <div class="item-img">
+                    <img
+                      :src="item.ImageURL"
+                      alt="Item Image"
+                      class="menu-item-img rounded"
+                    />
+                    <button
+                      @click="addToSharedCart(item)"
+                      :disabled="paymentInProgress"
+                      class="addtocart"
+                    >
+                      <fa :icon="['fas', 'plus']" style="color: gray"></fa>
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Cart Section: Move this inside the same row -->
-        <div class="col-lg-4">
-          <div class="sticky-cart w-100">
-            <h2 class="fw-bold">Your Cart</h2>
+      <!-- Cart Section: Move this inside the same row -->
+      <div class="col-lg-4">
+        <div class="sticky-cart w-100">
+          <div class="order-type-toggle">
+            <button :class="['tab active']">Pick Up</button>
+            <button class="tab disabled" disabled title="Not available yet">
+              Delivery
+            </button>
+          </div>
+          <h2 class="fw-bold">Your Cart</h2>
 
-            <!-- Cart Items -->
-            <div class="cart-items">
-              <div v-if="sharedCart.length === 0" class="text-muted small">
-                Your cart is empty.
-              </div>
-
-              <!-- Loop through each user -->
-              <div v-for="(items, username) in groupedCart" :key="username">
-                <h3 class="fw-bold">{{ username }}</h3>
-                <!-- Display Username -->
-
-                <ul>
-                  <li v-for="item in items" :key="item.ID">
-                    {{ item.ItemName }} - ${{ item.Price }} x
-                    {{ item.Quantity }}
-                    <button @click="removeFromSharedCart(item.ID)" :disabled="paymentInProgress">
-                      Remove
-                    </button>
-                  </li>
-                </ul>
-              </div>
-
-              <p>
-                <strong>Total: ${{ totalPrice }}</strong>
-              </p>
+          <!-- Cart Items -->
+          <div class="cart-container">
+            <div v-if="sharedCart.length === 0" class="text-muted small">
+              Your cart is empty.
             </div>
 
-            <!-- Sticky Footer (Total & Payment Button) -->
-            <div class="cart-footer">
-              <p class="fw-bold">Total: ${{ totalPrice }}</p>
-              <div v-if="userId === createdBy">
-                <StripeCheckout
-                  ref="checkoutRef"
-                  mode="payment"
-                  :pk="publishableKey"
-                  :line-items="lineItems"
-                  :success-url="successURL"
-                  :cancel-url="cancelURL"
-                  @loading="(v) => (loading = v)"
-                />
-                <button class="btn btn-dark w-100" @click="submitPayment">
-                  Review Payment and Address
+            <div class="cart-items">
+              <div v-for="(items, username) in groupedCart" :key="username">
+                <h5 class="username">{{ username }}</h5>
+              <div
+                v-for="item in items" :key="item.ItemID"class="cart-mini-card">
+                <img :src="item.ImageURL" alt="item" class="cart-mini-img" />
+                <div class="cart-mini-details">
+                  <p class="cart-mini-title">{{ item.ItemName }}</p>
+                  <div class="cart-mini-meta">
+                    <span class="cart-mini-price"
+                      >${{ item.Price.toFixed(2) }}</span
+                    >
+                    <span class="cart-mini-qty">{{ item.Quantity }}</span>
+                  </div>
+                </div>
+                <button @click="removeFromSharedCart(item.ID)" :disabled="paymentInProgress" class="cart-mini-remove">
+                  ×
                 </button>
-              </div>
-
-              <div v-else class="text-muted small text-center mt-2">
-                Only the cart creator can proceed with payment.
               </div>
             </div>
           </div>
         </div>
+
+          <div class="cart-footer">
+            <div class="cart-summary">
+              <div class="summary-row">
+                <span>Sub Total</span>
+                <span>${{ totalPrice }}</span>
+              </div>
+              <div class="summary-row">
+                <span>Tax 5%</span>
+                <span>$0.00</span>
+              </div>
+              <hr />
+              <div class="summary-row total">
+                <span>Total Amount</span>
+                <span class="fw-bold">${{ totalPrice }}</span>
+              </div>
+            </div>
+            <div v-if="userId === createdBy">
+              <StripeCheckout
+                ref="checkoutRef"
+                mode="payment"
+                :pk="publishableKey"
+                :line-items="lineItems"
+                :success-url="successURL"
+                :cancel-url="cancelURL"
+                @loading="(v) => (loading = v)"
+              />
+              <button class="btn placeorder w-100" @click="submitPayment">
+                Place Order
+              </button>
+            </div>
+
+            <div v-else class="text-muted small text-center mt-2">
+              Only the cart creator can proceed with payment.
+            </div>
+          </div>
       </div>
     </div>
+
+  </div>
   </div>
 </template>
 
@@ -398,11 +420,11 @@ html {
   border-bottom: 1px solid #ddd;
 }
 
-@media (min-width: 1600px) {
+@media (min-width: 1440px) {
   .restaurant-info,
   .menu {
-    padding-left: 250px;
-    padding-right: 250px;
+    padding-left: 150px;
+    padding-right: 150px;
   }
 }
 
@@ -553,29 +575,148 @@ h5 {
 }
 
 .card:hover {
-  background-color: lightgoldenrodyellow;
+  border: 1px solid #097d4c;
   transform: scale(1.05);
 }
 
 /* Sticky Full-Height Cart */
 .sticky-cart {
-  position: sticky;
-  top: 40px;
-  height: 80vh; /* Full height */
   display: flex;
   flex-direction: column;
-  background: white;
+  height: 100vh; /* or set this to fit your layout */
+  border-left: 2px solid #e0e0e0;
   padding: 16px;
-  border-radius: 8px;
-  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
-  overflow: hidden; /* Prevents overflow */
+  box-sizing: border-box;
+}
+
+.order-type-toggle {
+  display: flex;
+  background-color: #f5f5f5;
+  border-radius: 40px;
+  overflow: hidden;
+  width: 100%;
+  height: 50px;
+  margin-bottom: 20px;
+}
+
+.order-type-toggle .tab {
+  padding: 10px 20px;
+  border: none;
+  background-color: transparent;
+  font-weight: bold;
+  color: #333;
+  cursor: pointer;
+  transition: 0.2s ease-in-out;
+  flex: 1;
+}
+
+.order-type-toggle button.tab.active {
+  background-color: #b5dfb2 !important;
+  color: #333;
+  border-radius: 40px;
+}
+
+.order-type-toggle .tab.disabled {
+  background-color: #eee;
+  color: #ccc;
+  cursor: not-allowed;
 }
 
 /* Scrollable Cart Items */
-.cart-items {
+.cart-container {
   flex-grow: 1;
   overflow-y: auto;
   max-height: calc(100vh - 150px); /* Adjust height dynamically */
+}
+
+.cart-mini-card {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  padding: 10px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.cart-mini-img {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  object-fit: cover;
+  margin-right: 12px;
+}
+
+.cart-mini-details {
+  flex-grow: 1;
+}
+
+.cart-mini-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: #333;
+}
+
+.cart-mini-meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.cart-mini-price {
+  font-size: 13px;
+  font-weight: bold;
+  color: #097d4c;
+}
+
+.cart-mini-qty {
+  font-size: 13px;
+  color: #888;
+}
+
+.cart-mini-remove {
+  border: none;
+  background: transparent;
+  color: #999;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 10px;
+  transition: color 0.2s;
+}
+
+.cart-mini-remove:hover {
+  color: #e74c3c;
+}
+
+.cart-summary {
+  background: #f9f9f9;
+  padding: 16px;
+  border-top: 1px solid #ddd;
+  border-radius: 16px 16px 0 0;
+  margin-bottom: 10px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.summary-row.total {
+  font-weight: bold;
+  font-size: 15px;
+  margin-top: 8px;
+}
+
+.placeorder {
+  background-color: #097d4c;
+  text-align: center;
+  color: #fff;
 }
 
 /* Sticky Footer */
