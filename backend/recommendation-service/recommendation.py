@@ -1,114 +1,3 @@
-# from flask import Flask, request, jsonify
-# from flask_cors import CORS
-# import joblib
-# import requests
-# import tensorflow as tf
-# import numpy as np
-# import os
-# from flask_sqlalchemy import SQLAlchemy
-# import traceback
-# import requests
-# import json
-# import logging
-# import pandas as pd
-# from flask import Flask, request, jsonify
-# from sklearn.linear_model import SGDClassifier
-
-# app = Flask(__name__)
-# app.config["DEBUG"] = True
-# CORS(app)  
-
-
-# # db = SQLAlchemy()
-# # with app.app_context():
-# #     db.init_app(app)
-
-# app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://postgres.idoxtwehkovtpgpskzhh:postgres@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres"
-# app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-# app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_recycle': 299}
-
-# db = SQLAlchemy(app)
-
-
-# # class Recommendation(db.Model):
-# #     __tablename__ = "recommended_vendors"
-# #     vendor_id = db.Column(db.Integer, primary_key=True)
-# #     vendor_name = db.Column(db.String(255), nullable=False)
-# #     cuisine = db.Column(db.String(255), nullable=False)
-# #     image_url = db.Column(db.String(255), nullable=True)
-# # 🔹 Load TensorFlow model
-
-# def recommend_top_cuisines(user_history_df, model_path="model/user_cuisine_model.h5", top_k=2):
-#     model = tf.keras.models.load_model(model_path)
-
-#     # Load column structure
-#     with open("model/user_cuisine_columns.json") as f:
-#         cuisine_columns = json.load(f)
-
-#     # Build feature row
-#     user_input = pd.Series(0, index=cuisine_columns, dtype="float32")
-#     for cuisine in user_history_df["Cuisine"]:
-#         if cuisine in user_input.index:
-#             user_input[cuisine] += 1
-
-#     # Predict top cuisines
-#     preds = model.predict(np.array([user_input]))[0]
-#     top_indices = preds.argsort()[-top_k:][::-1]
-#     top_cuisines = [cuisine_columns[i] for i in top_indices]
-
-#     return top_cuisines
-
-# class Vendor(db.Model):
-#     __tablename__ = "vendors"
-
-#     VendorID = db.Column(db.Integer, primary_key=True)
-#     VendorName = db.Column(db.String(255))
-#     Cuisine = db.Column(db.String(255))
-#     ImageURL = db.Column(db.String(2048))
-
-
-# @app.route('/recommendation', methods=['POST'])
-# def recommendations():
-#     try:
-#         data = request.get_json()
-
-#         if not data or 'OrderHistory' not in data:
-#             return jsonify({"error": "OrderHistory data is required"}), 400
-
-#         order_history = data['OrderHistory']
-#         user_history_df = pd.DataFrame(order_history)
-
-#         top_cuisines = recommend_top_cuisines(user_history_df, model_path="model/user_cuisine_model.h5", top_k=2)
-#         print("Top predicted cuisines:", top_cuisines)
-#         logging.info(f"Top predicted cuisines: {top_cuisines}")
-
-#         vendors = Vendor.query.filter(Vendor.Cuisine.in_(top_cuisines)).limit(5).all()
-
-#         recommended_vendors = [{
-#             "VendorID": vendor.VendorID,
-#             "VendorName": vendor.VendorName,
-#             "Cuisine": vendor.Cuisine,
-#             "ImageURL": vendor.ImageURL
-#         } for vendor in vendors]
-
-#         return jsonify({"recommended": recommended_vendors})
-
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
-
-# @app.route("/")
-# def home():
-#     return jsonify({"message": "✅ Recommendation microservice is running."})
-
-# if __name__ == "__main__":
-#     app.run(host="0.0.0.0", port=5013)
-
-
-
-
-
-
-
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -149,14 +38,6 @@ app.config['SWAGGER'] = {
 
 swagger = Swagger(app)
 
-
-# class Recommendation(db.Model):
-#     __tablename__ = "recommended_vendors"
-#     vendor_id = db.Column(db.Integer, primary_key=True)
-#     vendor_name = db.Column(db.String(255), nullable=False)
-#     cuisine = db.Column(db.String(255), nullable=False)
-#     image_url = db.Column(db.String(255), nullable=True)
-# 🔹 Load TensorFlow model
 
 def recommend_top_cuisines(user_history_df, model_path="model/user_cuisine_model.h5", top_k=2):
     model = tf.keras.models.load_model(model_path)
@@ -362,46 +243,32 @@ def recommendations():
         # top_cuisines = recommend_top_cuisines(order_history_df)
         print("Top predicted cuisines:", top_cuisines)
 
-        vendors = Vendor.query.filter(Vendor.Cuisine.in_(top_cuisines)).limit(5).all()
+        recommended_vendors = []
+        for cuisine in top_cuisines:
+            try:
+                vendor_res = requests.get(f"http://vendor-service:5000/vendors/cuisine/{cuisine}")
+                if vendor_res.status_code == 200:
+                    vendor_list = vendor_res.json().get("vendors", [])
+                    recommended_vendors.extend(vendor_list)
+                else:
+                    print(f" No vendors found for cuisine: {cuisine}")
+            except Exception as e:
+                print(f"Error fetching vendors for {cuisine}:", str(e))
 
-        recommended_vendors = [{
-            "VendorID": vendor.VendorID,
-            "VendorName": vendor.VendorName,
-            "Cuisine": vendor.Cuisine,
-            "ImageURL": vendor.ImageURL
-        } for vendor in vendors]
+        # Optional: Deduplicate by VendorID
+        seen = set()
+        filtered_vendors = []
+        for v in recommended_vendors:
+            if v["VendorID"] not in seen:
+                filtered_vendors.append(v)
+                seen.add(v["VendorID"])
 
-        return jsonify({"recommended": recommended_vendors})
+        # Step 4: Return response
+        return jsonify({"recommended": filtered_vendors[:3]})
 
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
-
-
-
-@app.route('/update_model', methods=['POST'])
-def update_model():
-    try:
-        data = request.get_json()
-        user_cuisine = data.get("cuisine")
-
-        if not user_cuisine or user_cuisine not in cuisine_columns:
-            return jsonify({"error": "Invalid or unknown cuisine"}), 400
-
-        feature_vector = np.zeros(len(cuisine_columns))
-        index = cuisine_columns.index(user_cuisine)
-        feature_vector[index] = 1
-
-        model = joblib.load(MODEL_PATH)
-        model.partial_fit([feature_vector], [1])  # label = 1 (liked cuisine)
-        joblib.dump(model, MODEL_PATH)
-
-        print(f"Model updated with cuisine: {user_cuisine}", flush=True)
-        return jsonify({"message": "Model updated successfully"})
-
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": "Failed to update model", "details": str(e)}), 500
 
 
 @app.route("/")
@@ -423,7 +290,7 @@ def home():
                   type: string
                   example: "Recommendation microservice is running."
     """
-    return jsonify({"message": "✅ Recommendation microservice is running."})
+    return jsonify({"message": "Recommendation microservice is running."})
 
 
 

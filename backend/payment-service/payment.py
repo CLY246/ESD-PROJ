@@ -270,52 +270,6 @@ responses:
         }), 500
 
 
-@app.route('/webhook', methods=['POST'])
-def stripe_webhook():
-    """
-Stripe Webhook Listener
----
-tags:
-  - Stripe
-description: Handles Stripe webhook events for session completion
-consumes:
-  - application/json
-produces:
-  - application/json
-responses:
-  200:
-    description: Webhook received
-  400:
-    description: Invalid payload or signature
-"""
-    payload = request.data
-    sig_header = request.headers.get('stripe-signature')
-
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, endpoint_secret
-        )
-    except stripe.error.SignatureVerificationError:
-        return jsonify({"error": "Invalid signature"}), 400
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
-
-    # ✅ Handle the event
-    if event["type"] == "checkout.session.completed":
-        session = event["data"]["object"]
-        print("✅ Payment success:", session)
-
-        # Update your DB to mark transaction as "Success"
-        order_id = session.get("metadata", {}).get("order_id")  # if using metadata
-        if order_id:
-            transaction = Transaction.query.filter_by(OrderID=order_id).first()
-            if transaction:
-                transaction.PaymentStatus = "Success"
-                db.session.commit()
-
-    return jsonify({"status": "received"}), 200
-
-
 
 @app.route("/payments/transaction/<int:transaction_id>", methods=["GET"])
 def get_payment_by_transaction_id(transaction_id):

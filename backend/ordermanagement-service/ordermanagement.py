@@ -357,7 +357,7 @@ def place_order():
 
         return jsonify({
             "code": 201,
-            "message": "✅ Order and items saved"
+            "message": " Order and items saved"
         }), 201
 
     except Exception as e:
@@ -366,7 +366,7 @@ def place_order():
         traceback.print_exc()
         return jsonify({
             "code": 500,
-            "message": "❌ Failed to save order",
+            "message": " Failed to save order",
             "error": str(e)
         }), 500
 

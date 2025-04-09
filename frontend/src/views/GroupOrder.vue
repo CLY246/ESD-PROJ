@@ -223,7 +223,7 @@ export default {
 
         console.log("Final detailed items:", detailedItems);
 
-        // 🔁 Force Vue reactivity to kick in
+        //  Force Vue reactivity to kick in
         this.sharedCart = [];
         this.$nextTick(() => {
           this.sharedCart = detailedItems;
@@ -252,7 +252,7 @@ export default {
     },
 
     async submitPayment() {
-  console.log("✅ GroupOrder.vue: submitPayment() triggered");
+  console.log(" GroupOrder.vue: submitPayment() triggered");
 
   try {
     const userID = localStorage.getItem("user_id");

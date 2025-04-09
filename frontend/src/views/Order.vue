@@ -147,18 +147,18 @@ export default {
       let userID;
       try {
         const decoded = jwtDecode(token);
-        console.log("🚨 Decoded JWT token:", decoded);
+        console.log(" Decoded JWT token:", decoded);
         userID = decoded.UserID || decoded.user_id || decoded.sub;
 
         if (!userID) throw new Error("userID not present in token");
       } catch (error) {
-        console.error("❌ JWT decoding failed:", error);
+        console.error("JWT decoding failed:", error);
         alert("Invalid or expired user session. Please log in again.");
         return;
       }
 
-      localStorage.setItem("user_id", userID); // ✅ Now using localStorage
-      console.log("✅ Saved userID to localStorage:", userID);
+      localStorage.setItem("user_id", userID); 
+      console.log(" Saved userID to localStorage:", userID);
 
       const firstItem = this.cart[0];
       if (!firstItem || !firstItem.VendorID) {
@@ -219,7 +219,7 @@ export default {
             paymentUrl: paymentUrl,
           }));
 
-          console.log("🚨 DEBUG: Storage data before payment redirect:", {
+          console.log(" DEBUG: Storage data before payment redirect:", {
             user_id: userID,
             vendorname: vendorName,
             cuisine: cuisine,

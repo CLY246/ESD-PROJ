@@ -9,31 +9,6 @@
       The order confirmation has been sent to your email.
     </p>
 
-    <!-- <table class="order-table">
-      <thead>
-        <tr>
-          <th>Order Item</th>
-          <th>Price</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="item in orderData?.Items || []" :key="item.ItemID">
-          <td>{{ item.Quantity }} x {{ item.ItemName }}</td>
-          <td>${{ (item.Price * item.Quantity).toFixed(2) }}</td>
-        </tr>
-      </tbody>
-      <tfoot>
-        <tr>
-          <td><strong>TOTAL</strong></td>
-          <td>
-            <strong v-if="transactiondata"
-              >${{ transactiondata.Amount }}</strong
-            >
-            <strong v-else>$0.00</strong>
-          </td>
-        </tr>
-      </tfoot>
-    </table> -->
     <div v-if="isGroupOrder" class="split-payment-option">
       <p>This was a group order. Want to see how the bill is split?</p>
       <RouterLink :to="'/splitpayments'" class="splitbtn">

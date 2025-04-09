@@ -104,15 +104,15 @@ services:
       - app-network
     restart: always
 
-  queuemanagement-service:
-    build: ./backend/queuemanagement-service
-    ports:
-      - "5004:5000"
-    environment:
-      SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/queuemanagement"
-    networks:
-      - app-network
-    restart: always
+  # queuemanagement-service:
+  #   build: ./backend/queuemanagement-service
+  #   ports:
+  #     - "5004:5000"
+  #   environment:
+  #     SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/queuemanagement"
+  #   networks:
+  #     - app-network
+  #   restart: always
 
   payment-service:
     build: ./backend/payment-service
@@ -153,30 +153,30 @@ services:
         condition: service_started
     restart: always
 
-  error-service:
-    build: ./backend/error-service
-    ports:
-      - "5007:5000"
-    volumes:
-      - ./backend/rabbitmq:/app/rabbitmq
-    command:
-      [
-        "sh",
-        "-c",
-        "python /app/rabbitmq/amqp_setup.py && python error.py"
-      ]
-    environment:
-      SQLALCHEMY_DATABASE_URI: "postgresql://postgres.rykllqzsqugqdvbvxdbv:Smelly246!@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
-      rabbit_host: rabbitmq
-      rabbit_port: 5672
-    networks:
-      - app-network
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      placeanorder-service:
-        condition: service_started
-    restart: always
+  # error-service:
+  #   build: ./backend/error-service
+  #   ports:
+  #     - "5007:5000"
+  #   volumes:
+  #     - ./backend/rabbitmq:/app/rabbitmq
+  #   command:
+  #     [
+  #       "sh",
+  #       "-c",
+  #       "python /app/rabbitmq/amqp_setup.py && python error.py"
+  #     ]
+  #   environment:
+  #     SQLALCHEMY_DATABASE_URI: "postgresql://postgres.rykllqzsqugqdvbvxdbv:Smelly246!@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
+  #     rabbit_host: rabbitmq
+  #     rabbit_port: 5672
+  #   networks:
+  #     - app-network
+  #   depends_on:
+  #     rabbitmq:
+  #       condition: service_healthy
+  #     placeanorder-service:
+  #       condition: service_started
+  #   restart: always
 
   activitylog-service:
     build: ./backend/activitylog-service
@@ -214,15 +214,15 @@ services:
       - app-network
     restart: always
 
-  quickreorder-service:
-    build: ./backend/quickreorder-service
-    ports:
-      - "5010:5000"
-    environment:
-      SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/quickreorder"
-    networks:
-      - app-network
-    restart: always
+  # quickreorder-service:
+  #   build: ./backend/quickreorder-service
+  #   ports:
+  #     - "5010:5000"
+  #   environment:
+  #     SQLALCHEMY_DATABASE_URI: "mysql+mysqlconnector://root:root@host.docker.internal:8889/quickreorder"
+  #   networks:
+  #     - app-network
+  #   restart: always
 
   placeanorder-service:
     build: ./backend/placeanorder-service

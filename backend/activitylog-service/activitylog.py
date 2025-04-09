@@ -86,7 +86,7 @@ def get_activities():
 def db_check():
     try:
         db.session.execute(text("SELECT 1"))
-        return jsonify({"status": "Connected to DB ✅"})
+        return jsonify({"status": "Connected to DB "})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
@@ -103,9 +103,9 @@ def create_activity_log(activity_description):
             activity = Activity(Activity_Description=activity_description)
             db.session.add(activity)
             db.session.commit()
-            print(f"📝 Logged activity: {activity_description}")
+            print(f" Logged activity: {activity_description}")
         except Exception as e:
-            print(f"❌ Error logging activity: {str(e)}")
+            print(f" Error logging activity: {str(e)}")
 
 def callback(channel, method, properties, body):
     """Handles incoming messages from RabbitMQ."""
@@ -113,7 +113,7 @@ def callback(channel, method, properties, body):
         activity_description = body.decode("utf-8")
         create_activity_log(activity_description)
     except Exception as e:
-        print(f"❌ Failed to process message: {str(e)}")
+        print(f" Failed to process message: {str(e)}")
 
 def receive_order_log():
     """Sets up RabbitMQ listener in a separate thread."""
@@ -123,28 +123,20 @@ def receive_order_log():
         channel.queue_bind(exchange=amqp_setup.EXCHANGE_NAME, queue=QUEUE_NAME, routing_key=monitorBindingKey)
 
         channel.basic_consume(queue=QUEUE_NAME, on_message_callback=callback, auto_ack=True)
-        print(f"📡 Listening for messages on queue '{QUEUE_NAME}'... [Activity Log Service]")
+        print(f" Listening for messages on queue '{QUEUE_NAME}'... [Activity Log Service]")
         channel.start_consuming()
     except Exception as e:
-        print(f"❌ RabbitMQ Consumer Error: {str(e)}")
+        print(f" RabbitMQ Consumer Error: {str(e)}")
 
 # Start the consumer thread
 threading.Thread(target=receive_order_log, daemon=True).start()
 
-# # Run Flask app
-# if __name__ == "__main__":
-#     print("🚀 Starting Flask app for Activity Log Service...")
-#     app.run(host="0.0.0.0", port=5000, debug=False)
-
-
-
-# -------------------- Create tables if not exist --------------------
 with app.app_context():
     try:
         db.create_all()
-        print("✅ Tables created successfully!")
+        print(" Tables created successfully!")
     except Exception as e:
-        print(f"❌ Error creating tables: {str(e)}")
+        print(f" Error creating tables: {str(e)}")
 
 # Run Flask app
 if __name__ == "__main__":

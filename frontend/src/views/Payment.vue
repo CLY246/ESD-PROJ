@@ -88,15 +88,15 @@ const createPayment = async () => {
       sessionStorage.setItem("cuisine", cuisine);
       sessionStorage.setItem("isGroupOrder", "true");
 
-      // ✅ Update the recommendation model with the ordered cuisine
-      try {
-        await axios.post("http://localhost:5013/update_model", {
-          cuisine: cuisine  // This comes from session or cart, like "Thai", "Japanese"
-        });
-        console.log("Model updated with cuisine:", cuisine);
-      } catch (err) {
-        console.error("Failed to update model with cuisine:", err);
-      }
+      // // Update the recommendation model with the ordered cuisine
+      // try {
+      //   await axios.post("http://localhost:5013/update_model", {
+      //     cuisine: cuisine  // This comes from session or cart, like "Thai", "Japanese"
+      //   });
+      //   console.log("Model updated with cuisine:", cuisine);
+      // } catch (err) {
+      //   console.error("Failed to update model with cuisine:", err);
+      // }
 
 
       console.log("Session Storage before Stripe redirect:", {

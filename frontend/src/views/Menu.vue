@@ -194,40 +194,9 @@ const startGroupOrder = async () => {
   }
 };
 
-// const submitPayment = async () => {
-//   try {
-//     const response = await axios.post(
-//       "http://localhost:5005/payments",
-//       { 
-//         Amount: totalPrice.value,
-//       },
-//       {
-//         headers: { "Content-Type": "application/json" }, // Ensure JSON format
-//       }
-//     );
-//     if (response.data.transaction) {
-//       sessionStorage.setItem("transaction", JSON.stringify(response.data.transaction));
-//       sessionStorage.setItem("cart", JSON.stringify(cart.value));
-//       sessionStorage.setItem('cuisine', vendor.value.Cuisine);
-//       sessionStorage.setItem('vendorname', vendor.value.VendorName);
-//       sessionStorage.setItem('vendorid', vendor.value.VendorId);
-//       sessionStorage.setItem("isGroupOrder", "false");
-//       console.log("Transaction received:", response.data.transaction);
-//     }
-//     if (response.data.paymentUrl) {
-      
 
-//       window.location.href = response.data.paymentUrl; // Redirect to Stripe
-//     } else {
-//       alert("Error initiating payment.");
-//     }
-//   } catch (error) {
-//     console.error("Payment error:", error.response?.data || error);
-//     alert("Failed to initiate payment.");
-//   }
-// };
 const placeorder = async () => {
-  console.log("🔥 Menu.vue: placeorder() triggered");
+  console.log("Menu.vue: placeorder() triggered");
   try {
     const userID = localStorage.getItem("user_id");
 

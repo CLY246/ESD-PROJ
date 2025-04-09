@@ -150,6 +150,22 @@ def get_vendors():
         return jsonify([vendor.json() for vendor in vendors])
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/vendors/cuisine/<cuisine>', methods=['GET'])
+def get_vendors_by_cuisine(cuisine):
+    vendors = Vendor.query.filter_by(Cuisine=cuisine).all()
+    if not vendors:
+        return jsonify({"vendors": []}), 200
+    
+    return jsonify({
+        "vendors": [{
+            "VendorID": v.VendorID,
+            "VendorName": v.VendorName,
+            "Cuisine": v.Cuisine,
+            "ImageURL": v.ImageURL
+        } for v in vendors]
+    }), 200
+ 
 
 @app.route("/vendors/<int:vendor_id>", methods=["GET"])
 def get_vendor(vendor_id):

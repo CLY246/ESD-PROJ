@@ -48,4 +48,4 @@ model.partial_fit(feature_vectors, labels, classes=np.array([0, 1]))
 
 # Save model
 joblib.dump(model, "model/online_model.pkl")
-print("✅ Model trained and saved to model/online_model.pkl")
+print("Model trained and saved to model/online_model.pkl")
