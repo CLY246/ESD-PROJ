@@ -42,7 +42,7 @@ export default {
 .router-container {
   flex: 1; /* Ensures it expands to fill space */
   min-width: 100%;
-  padding-top: 20px;
+  padding-top: 70px;
 }
 
 *{

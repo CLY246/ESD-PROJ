@@ -1,8 +1,4 @@
 <template>
-  <!-- <div>
-      <h1>Home Page</h1>
-      <router-link to="/login">Go to Login</router-link>
-    </div> -->
   <div class="container">
     <div class="row align-items-center">
       <!-- Left Side (Text) -->
@@ -54,6 +50,7 @@ export default {
 <style scoped>
 .container {
   padding-left: 150px;
+  padding-top: 70px;
 }
 .main-illustration {
   max-width: 80%;
