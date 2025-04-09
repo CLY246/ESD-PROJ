@@ -106,16 +106,16 @@
 
             <!-- Sticky Footer (Total & Payment Button) -->
             <div class="cart-footer">
-            <p class="fw-bold">Total: ${{ totalPrice }}</p>
-            <StripeCheckout
-              ref="checkoutRef"
-              mode="payment"
-              :pk="publishableKey"
-              :line-items="lineItems"
-              :success-url="successURL"
-              :cancel-url="cancelURL"
-              @loading="(v) => (loading = v)"
-            />
+              <p class="fw-bold">Total: ${{ totalPrice }}</p>
+              <StripeCheckout
+                ref="checkoutRef"
+                mode="payment"
+                :pk="publishableKey"
+                :line-items="lineItems"
+                :success-url="successURL"
+                :cancel-url="cancelURL"
+                @loading="(v) => (loading = v)"
+              />
               <button class="btn btn-dark w-100" @click="submitPayment">
                 Review Payment and Address
               </button>
@@ -135,7 +135,6 @@ import { useRoute, useRouter } from "vue-router";
 // import axios from "axios";
 import { StripeCheckout } from "@vue-stripe/vue-stripe";
 
-
 const loading = ref(false);
 
 const supabase = createClient(
@@ -148,7 +147,6 @@ const publishableKey = ref(
 );
 const successURL = ref("http://localhost:8080/success");
 const cancelURL = ref("http://localhost:8080/cancel");
-
 
 export default {
   data() {
@@ -183,7 +181,6 @@ export default {
         quantity: item.quantity || 1,
       }));
     },
-  
   },
   methods: {
     async fetchSharedCart() {
@@ -193,41 +190,7 @@ export default {
         );
         console.log("Fetched cart data:", res.data);
 
-        const items = res.data.Items || [];
-        console.log("Raw cart items:", items);
-
-        const detailedItems = await Promise.all(
-          items.map(async (item) => {
-            try {
-              const [menuRes, userRes] = await Promise.all([
-                axios.get(`http://localhost:8000/menuitem/${item.Item_ID}`),
-                axios.get(`http://localhost:8000/username/${item.User_ID}`),
-              ]);
-
-              return {
-                ...item,
-                ...menuRes.data,
-                Username: userRes.data.Username || "Unknown",
-              };
-            } catch (error) {
-              console.warn("Failed to enrich item", item, error);
-              return {
-                ...item,
-                ItemName: "Unknown",
-                Price: 0,
-                Username: "Unknown",
-              };
-            }
-          })
-        );
-
-        console.log("Final detailed items:", detailedItems);
-
-        //  Force Vue reactivity to kick in
-        this.sharedCart = [];
-        this.$nextTick(() => {
-          this.sharedCart = detailedItems;
-        });
+        this.sharedCart = res.data.Items || [];
       } catch (err) {
         console.error("Error fetching shared cart:", err);
       }
@@ -238,76 +201,59 @@ export default {
         const res = await axios.get(
           `http://localhost:8000/group-order/${this.cartId}/vendor`
         );
-        const vendorId = res.data.vendorId;
-        const vendorRes = await axios.get(`http://localhost:8000/vendors/${vendorId}`);
-        this.vendor = vendorRes.data;   
-
-        const menuRes = await axios.get(
-          `http://localhost:8000/menu/${vendorId}`
-        );
-        this.menuItems = menuRes.data;
+        this.vendor = res.data.vendor;
+        this.menuItems = res.data.menuItems;
       } catch (err) {
-        console.error("Error fetching vendor or menu:", err);
+        console.error("Error fetching vendor details:", err);
       }
     },
 
     async submitPayment() {
-  console.log(" GroupOrder.vue: submitPayment() triggered");
+      console.log(" GroupOrder.vue: submitPayment() triggered");
 
-  try {
-    const userID = localStorage.getItem("user_id");
+      try {
+        const userID = localStorage.getItem("user_id");
 
-    const orderItems = this.sharedCart.map((item) => ({
-      ItemID: item.Item_ID,
-      VendorID: this.vendor.VendorID,
-      Quantity: item.Quantity,
-      Username: item.Username,
-    }));
+        const orderItems = this.sharedCart.map((item) => ({
+          ItemID: item.Item_ID,
+          VendorID: this.vendor.VendorID,
+          Quantity: item.Quantity,
+          Username: item.Username,
+        }));
 
-    const orderData = {
-      UserID: userID,
-      VendorID: this.vendor.VendorID,
-      TotalAmount: parseFloat(this.totalPrice),
-      OrderItems: orderItems,
-    };
+        const orderData = {
+          UserID: userID,
+          VendorID: this.vendor.VendorID,
+          TotalAmount: parseFloat(this.totalPrice),
+          OrderItems: orderItems,
+        };
 
-    // Step 1: Save group order
-    const response = await axios.post(
-      "http://localhost:8000/place_order",
-      {
-        order: orderData,
-        isGroupOrder: true, // flag to tell backend this is group order
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
+        const response = await axios.post(
+          "http://localhost:8000/group-order/submit-payment",
+          { order: orderData },
+          { headers: { "Content-Type": "application/json" } }
+        );
+
+        // Store session data & redirect
+        if (response.data) {
+          sessionStorage.setItem("transaction", JSON.stringify(response.data.transaction));
+          sessionStorage.setItem("cart", JSON.stringify(this.sharedCart));
+          sessionStorage.setItem("cuisine", this.vendor.Cuisine);
+          sessionStorage.setItem("vendorname", this.vendor.VendorName);
+          sessionStorage.setItem("vendorid", this.vendor.VendorID);
+          sessionStorage.setItem("isGroupOrder", "true");
+        }
+
+        if (response.data.paymentUrl) {
+          window.location.href = response.data.paymentUrl;
+        } else {
+          alert("Error initiating payment.");
+        }
+      } catch (error) {
+        console.error("Payment error:", error.response?.data || error);
+        alert("Failed to initiate group payment.");
       }
-    );
-    // const orderId = placeOrderRes.data.OrderID;
-
-    // Step 3: Store details in session
-    if (response.data) {
-      sessionStorage.setItem("transaction", JSON.stringify(response.data.transaction));
-      sessionStorage.setItem("cart", JSON.stringify(this.sharedCart));
-      sessionStorage.setItem("cuisine", this.vendor.Cuisine);
-      sessionStorage.setItem("vendorname", this.vendor.VendorName);
-      sessionStorage.setItem("vendorid", this.vendor.VendorID);
-      sessionStorage.setItem("isGroupOrder", "true");
-    }
-
-    // Step 4: Redirect to Stripe
-    if (response.data.paymentUrl) {
-      window.location.href = response.data.paymentUrl;
-    } else {
-      alert("Error initiating payment.");
-    }
-  } catch (error) {
-    console.error("Payment error:", error.response?.data || error);
-    alert("Failed to initiate group payment.");
-  }
-},
-
+    },
 
     async addToSharedCart(item) {
       try {

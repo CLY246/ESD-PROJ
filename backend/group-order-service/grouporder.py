@@ -1,16 +1,12 @@
-#commenting these lines out first to test grouporder.py
-# import eventlet
-# eventlet.monkey_patch()
-
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS, cross_origin
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
-# from flask_socketio import SocketIO, emit, join_room
 from supabase import create_client
 import os
 import json
+import requests
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
@@ -112,7 +108,7 @@ def create_group_order():
     return jsonify({"invite_link": invite_link, "cartId": str(shared_cart_id)})
 
 @app.route("/group-order/<cart_id>/vendor", methods=["GET"])
-def get_vendor_from_cart(cart_id):
+def get_vendor_and_menu(cart_id):
     """
     Get vendor ID from a shared cart
     ---
@@ -139,11 +135,34 @@ def get_vendor_from_cart(cart_id):
       404:
         description: Shared cart not found
     """
-    cart = SharedCart.query.filter_by(CartID=cart_id).first()
-    if not cart:
-        return jsonify({"error": "Shared cart not found"}), 404
+    try:
+        cart = SharedCart.query.filter_by(CartID=cart_id).first()
+        if not cart:
+            return jsonify({"error": "Shared cart not found"}), 404
 
-    return jsonify({"cartId": cart_id, "vendorId": cart.VendorID})
+        vendor_id = cart.VendorID
+        try:
+            vendor_response = requests.get(f"http://vendor-service:5000/vendors/{vendor_id}")
+            vendor_data = vendor_response.json() if vendor_response.status_code == 200 else {}
+        except Exception as e:
+            logging.warning(f"Failed to fetch vendor info: {e}")
+            vendor_data = {}
+        try:
+            menu_response = requests.get(f"http://vendor-service:5000/menu/{vendor_id}")
+            menu_data = menu_response.json() if menu_response.status_code == 200 else {}
+        except Exception as e:
+            logging.warning(f"Failed to fetch menu: {e}")
+            menu_data = {}
+
+        return jsonify({
+            "vendorId": vendor_id,
+            "vendor": vendor_data,
+            "menuItems": menu_data
+        })
+
+    except Exception as e:
+        logging.error(f"Error fetching vendor details for cart {cart_id}: {e}")
+        return jsonify({"error": "Failed to fetch vendor details"}), 500
 
 
 @app.route("/group-order/join/<cart_id>", methods=["POST"])
@@ -288,28 +307,64 @@ def get_cart_items(cart_id):
       500:
         description: Failed to fetch cart
     """
-    
     try:
         cart_items = CartItem.query.filter_by(Cart_ID=cart_id).all()
 
-        items = [
-            {
+        finalised_items = []
+        for item in cart_items:
+            cart_items_data = {
                 "ID": item.ID,
                 "Item_ID": item.Item_ID,
                 "User_ID": item.User_ID,
                 "Quantity": item.Quantity,
                 "Added_at": item.Added_at.isoformat() if item.Added_at else None
             }
-            for item in cart_items
-        ]
+
+            try:
+                menu_response = requests.get(f"http://vendor-service:5000/menuitem/{item.Item_ID}")
+                logging.info(f"Menu response: {menu_response.status_code}")
+                if menu_response.status_code == 200:
+                    menu_data = menu_response.json()
+                    cart_items_data.update(menu_data)
+                    cart_items_data["ItemID"] = menu_data.get("ItemID", item.Item_ID)
+                else:
+                    cart_items_data.update({
+                        "ItemName": "Unknown",
+                        "Price": 0,
+                        "ImageURL": "",
+                        "Description": "",
+                        "ItemID": item.Item_ID
+                    })
+            except Exception as e:
+                logging.info(f"Menu fetch failed: {e}")
+                cart_items_data.update({
+                    "ItemName": "Unknown",
+                    "Price": 0,
+                    "ImageURL": "",
+                    "Description": "",
+                    "ItemID": item.Item_ID
+                })
+
+            try:
+                user_response = requests.get(f"http://user-service:5000/username/{item.User_ID}")
+                if user_response.status_code == 200:
+                    user_data = user_response.json()
+                    cart_items_data["Username"] = user_data.get("Username", "Unknown")
+                else:
+                    cart_items_data["Username"] = "Unknown"
+            except Exception as e:
+                logging.info(f"User fetch failed: {e}")
+                cart_items_data["Username"] = "Unknown"
+
+            finalised_items.append(cart_items_data)
 
         return jsonify({
             "CartID": cart_id,
-            "Items": items
+            "Items": finalised_items
         })
+
     except Exception as e:
-        # Log the error if needed
-        print(f"Error fetching cart {cart_id}: {str(e)}")
+        logging.info(f"Error fetching cart {cart_id}: {str(e)}")
         return jsonify({"error": "Failed to fetch cart"}), 500
     
 @app.route("/group-order/<cart_id>/remove-item/<item_id>", methods=["DELETE"])
@@ -366,6 +421,32 @@ def clear_cart(cart_id):
     db.session.commit()
     return jsonify({"message": "Cart cleared successfully", "cartId": cart_id})
 
+@app.route("/group-order/submit-payment", methods=["POST"])
+def submit_group_payment():
+    try:
+        data = request.get_json()
+        order = data.get("order")
+        if not order:
+            return jsonify({"error": "Missing order data"}), 400
+
+        # Forward to place_order microservice
+        place_order_response = requests.post(
+            "http://placeanorder-service:5000/place_order",
+            json={
+                "order": order,
+                "isGroupOrder": True
+            },
+            headers={"Content-Type": "application/json"}
+        )
+
+        if place_order_response.status_code == 200:
+            return jsonify(place_order_response.json())
+        else:
+            return jsonify({"error": "Failed to place order"}), 500
+
+    except Exception as e:
+        logging.error(f"Group order payment submission failed: {e}")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 if __name__ == "__main__":

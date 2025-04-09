@@ -88,6 +88,12 @@ services:
         methods: ["DELETE", "OPTIONS"]
         strip_path: false
         regex_priority: 1
+      
+      - name: submit-group-payment
+        paths: ["/group-order/submit-payment"]
+        methods: ["POST", "OPTIONS"]
+        strip_path: false
+        regex_priority: 1
 
   - name: vendor-service
     url: http://vendor-service:5000
