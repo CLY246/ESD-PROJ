@@ -1244,118 +1244,7 @@
           }
         }
       },
-      "/payments": {
-        "post": {
-          "summary": "Process a New Payment",
-          "description": "This API initiates a Stripe Checkout session and records the payment.",
-          "operationId": "processPayment",
-          "tags": [
-            "Payment"
-          ],
-          "consumes": [
-            "application/json"
-          ],
-          "parameters": [
-            {
-              "in": "body",
-              "name": "body",
-              "description": "The payment details",
-              "required": true,
-              "schema": {
-                "type": "object",
-                "required": [
-                  "Amount"
-                ],
-                "properties": {
-                  "Amount": {
-                    "type": "number",
-                    "format": "float",
-                    "description": "The amount to be paid",
-                    "example": 10.0
-                  }
-                }
-              }
-            }
-          ],
-          "responses": {
-            "201": {
-              "description": "Payment session created successfully",
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "message": {
-                    "type": "string",
-                    "example": "Payment initiated successfully"
-                  },
-                  "paymentUrl": {
-                    "type": "string",
-                    "description": "The URL to redirect for the Stripe Checkout session",
-                    "example": "https://checkout.stripe.com/..."
-                  },
-                  "transaction": {
-                    "type": "object",
-                    "properties": {
-                      "TransactionID": {
-                        "type": "integer",
-                        "example": 1
-                      },
-                      "OrderID": {
-                        "type": "integer",
-                        "example": 1
-                      },
-                      "Amount": {
-                        "type": "number",
-                        "format": "float",
-                        "example": 10.0
-                      },
-                      "PaymentMethod": {
-                        "type": "string",
-                        "example": "Stripe"
-                      },
-                      "PaymentStatus": {
-                        "type": "string",
-                        "example": "Pending"
-                      }
-                    }
-                  }
-                }
-              }
-            },
-            "400": {
-              "description": "Invalid input",
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "message": {
-                    "type": "string",
-                    "example": "Amount is required"
-                  }
-                }
-              }
-            },
-            "500": {
-              "description": "Internal server error",
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "error": {
-                    "type": "string",
-                    "example": "Payment processing failed"
-                  },
-                  "message": {
-                    "type": "string",
-                    "example": "Payment processing failed"
-                  },
-                  "transaction": {
-                    "type": "null",
-                    "example": null
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
+
 
       
 
@@ -1491,13 +1380,132 @@
       },
 
       "/payments": {
+        "post": {
+          "summary": "Process a New Payment",
+          "description": "This API initiates a Stripe Checkout session and records the payment.",
+          "operationId": "processPayment",
+          "tags": ["Payment"],
+          "consumes": ["application/json"],
+          "parameters": [
+            {
+              "in": "body",
+              "name": "body",
+              "description": "The payment details",
+              "required": true,
+              "schema": {
+                "type": "object",
+                "required": ["Amount"],
+                "properties": {
+                  "Amount": {
+                    "type": "number",
+                    "format": "float",
+                    "description": "The amount to be paid",
+                    "example": 10.0
+                  },
+                  "OrderID": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "PaymentMethod": {
+                    "type": "string",
+                    "example": "Stripe"
+                  },
+                  "PaymentStatus": {
+                    "type": "string",
+                    "example": "Pending"
+                  },
+                  "TransactionID": {
+                    "type": "integer",
+                    "example": 1
+                  }
+                }
+              }
+            }
+          ],
+          "responses": {
+            "201": {
+              "description": "Payment session created successfully",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Payment initiated successfully"
+                  },
+                  "paymentUrl": {
+                    "type": "string",
+                    "description": "The URL to redirect for the Stripe Checkout session",
+                    "example": "https://checkout.stripe.com/..."
+                  },
+                  "transaction": {
+                    "type": "object",
+                    "properties": {
+                      "Amount": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 10.0
+                      },
+                      "OrderID": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "PaymentMethod": {
+                        "type": "string",
+                        "example": "Stripe"
+                      },
+                      "PaymentStatus": {
+                        "type": "string",
+                        "example": "Pending"
+                      },
+                      "TransactionID": {
+                        "type": "integer",
+                        "example": 1
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Invalid input",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "example": "Amount is required"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "Payment processing failed"
+                  },
+                  "message": {
+                    "type": "string",
+                    "example": "Payment processing failed"
+                  },
+                  "transaction": {
+                    "type": "null",
+                    "example": null
+                  }
+                }
+              }
+            }
+          }
+        },
         "get": {
           "summary": "Get All Transactions",
           "description": "Retrieves a list of all transactions from the database.",
           "operationId": "getAllTransactions",
-          "tags": [
-            "Payment"
-          ],
+          "tags": ["Payment"],
+          "produces": ["application/json"],
           "responses": {
             "200": {
               "description": "A list of transactions",
@@ -1666,13 +1674,13 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "invite_link": {
-                    "type": "string",
-                    "example": "http://localhost:8080/group-order/join/fc8dcb88-6a7a-4c31-b67e-67f5b0b7d7f2"
-                  },
                   "cartId": {
                     "type": "string",
                     "example": "fc8dcb88-6a7a-4c31-b67e-67f5b0b7d7f2"
+                  },
+                  "invite_link": {
+                    "type": "string",
+                    "example": "http://localhost:8080/group-order/join/fc8dcb88-6a7a-4c31-b67e-67f5b0b7d7f2"
                   }
                 }
               }
@@ -1725,10 +1733,16 @@
                   "userId"
                 ],
                 "properties": {
+                  
+                  "vendorId": {
+                    "type": "integer",
+                    "description": "The vendor of the group order",
+                    "example": 1
+                  },
                   "userId": {
                     "type": "string",
                     "description": "The unique identifier of the user joining the group order",
-                    "example": "user_abc"
+                    "example": "gc9dcb08-6a8b-4c21-b97e-67f5c0b9d7f2"
                   }
                 }
               }
@@ -1740,13 +1754,13 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "message": {
-                    "type": "string",
-                    "example": "Successfully joined the group order"
-                  },
                   "cartId": {
                     "type": "string",
                     "example": "fc8dcb88-6a7a-4c31-b67e-67f5b0b7d7f2"
+                  },
+                  "message": {
+                    "type": "string",
+                    "example": "Successfully joined the group order"
                   }
                 }
               }
@@ -1840,13 +1854,13 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "message": {
-                    "type": "string",
-                    "example": "Item added successfully"
-                  },
                   "cartId": {
                     "type": "string",
                     "example": "fc8dcb88-6a7a-4c31-b67e-67f5b0b7d7f2"
+                  },
+                  "message": {
+                    "type": "string",
+                    "example": "Item added successfully"
                   }
                 }
               }
