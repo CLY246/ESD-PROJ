@@ -266,20 +266,69 @@
             "schema": {
               "type": "object",
               "properties": {
-                "UserEmail": {
+                "Email": {
                   "type": "string",
-                  "description": "User Email"
+                  "description": "User's email address",
+                  "example": "smellymonkey@gmail.com"
+                },
+                "UserID": {
+                  "type": "string",
+                  "description": "User's unique identifier",
+                  "example": "cd5e64cc-0982-48f8-ad05-804fb12c9fea"
+                },
+                "Name": {
+                  "type": "string",
+                  "description": "User's name",
+                  "example": "krysten"
+                },
+                "Cuisine": {
+                  "type": "string",
+                  "description": "Type of cuisine for the order",
+                  "example": "Western"
+                },
+                "ImageURL": {
+                  "type": "string",
+                  "description": "URL of the vendor's image",
+                  "example": "https://wherecrowded.sg/at/storage/images/brands/507171.jpeg"
+                },
+                "OrderDateTime": {
+                  "type": "string",
+                  "description": "Date and time when the order was placed",
+                  "example": "Tue, 08 Apr 2025 02:48:53 GMT"
                 },
                 "OrderID": {
+                  "type": "integer",
+                  "description": "Unique identifier of the order",
+                  "example": 170
+                },
+                "OrderStatus": {
                   "type": "string",
-                  "description": "Order id"
+                  "description": "Current status of the order",
+                  "example": "Completed"
                 },
                 "TotalAmount": {
+                  "type": "number",
+                  "format": "float",
+                  "description": "Total amount of the order",
+                  "example": 5.8
+                },
+                "TransactionID": {
                   "type": "string",
-                  "description": "Total amount of the order"
+                  "description": "Unique identifier of the transaction",
+                  "example": "418"
+                },
+                "VendorID": {
+                  "type": "integer",
+                  "description": "Unique identifier of the vendor",
+                  "example": 1
+                },
+                "VendorName": {
+                  "type": "string",
+                  "description": "Name of the vendor",
+                  "example": "Pasta Express (SMU)"
                 }
               },
-              "required": ["recipient", "subject", "body"]
+              "required": ["Email", "OrderID", "TotalAmount"]
             }
           }
         ],
@@ -395,11 +444,54 @@
               "properties": {
                 "order": {
                   "type": "object",
-                  "description": "Order details object"
-                },
-                "isGroupOrder": {
-                  "type": "boolean",
-                  "default": false
+                  "description": "Order details object",
+                  "properties": {
+                    "UserID": {
+                      "type": "string",
+                      "description": "Unique identifier for the user placing the order"
+                    },
+                    "VendorID": {
+                      "type": "string",
+                      "description": "Unique identifier for the vendor"
+                    },
+                    "TotalAmount": {
+                      "type": "number",
+                      "format": "double",
+                      "description": "Total amount for the order"
+                    },
+                    "OrderItems": {
+                      "type": "array",
+                      "description": "List of items in the order",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "ItemID": {
+                            "type": "integer",
+                            "description": "Unique identifier for the item"
+                          },
+                          "ItemName": {
+                            "type": "string",
+                            "description": "Name of the item"
+                          },
+                          "Quantity": {
+                            "type": "integer",
+                            "description": "Quantity of the item"
+                          },
+                          "Price": {
+                            "type": "number",
+                            "format": "double",
+                            "description": "Price per unit of the item"
+                          },
+                          "VendorID": {
+                            "type": "integer",
+                            "description": "Vendor identifier for the item"
+                          }
+                        },
+                        "required": ["ItemID", "ItemName", "Quantity", "Price", "VendorID"]
+                      }
+                    }
+                  },
+                  "required": ["UserID", "VendorID", "TotalAmount", "OrderItems"]
                 }
               },
               "required": ["order"]
