@@ -41,6 +41,9 @@ class SharedCart(db.Model):
     VendorID = db.Column(db.Integer, nullable=False)
     Created_by = db.Column(db.UUID(as_uuid=True), nullable=False)
     PaymentInProgress = db.Column(db.Boolean, default=False)
+    PaymentStatus = db.Column(db.Text, default='UNPAID')
+    OrderID = db.Column(db.Integer, nullable=True)
+
 
 class CartItem(db.Model):
     __tablename__ = "cart_items"
@@ -446,6 +449,7 @@ def submit_group_payment():
             "http://placeanorder-service:5000/place_order",
             json={
                 "order": order,
+                "cart_id": cart_id,
                 "isGroupOrder": True
             },
             headers={"Content-Type": "application/json"}
@@ -460,6 +464,21 @@ def submit_group_payment():
         logging.error(f"Group order payment submission failed: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
+@app.route("/group-order/<cart_id>/mark-paid", methods=["POST"])
+def mark_cart_paid(cart_id):
+    data = request.get_json()
+    order_id = data.get("order_id") 
 
+    cart = SharedCart.query.get(cart_id)
+    if cart:
+        cart.PaymentStatus = 'PAID'
+        
+        cart.OrderID = order_id 
+
+        db.session.commit()
+        return jsonify({"message": "Cart marked as paid"}), 200
+
+    return jsonify({"message": "Cart not found"}), 404
+  
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

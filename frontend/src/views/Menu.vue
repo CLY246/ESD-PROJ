@@ -132,8 +132,8 @@
               mode="payment"
               :pk="publishableKey"
               :line-items="lineItems"
-              :success-url="successURL"
-              :cancel-url="cancelURL"
+              :success-url="successURL.value"
+              :cancel-url="cancelURL.value"
               @loading="(v) => (loading = v)"
             />
             <button class="btn placeorder w-100" @click="placeorder">
@@ -165,6 +165,10 @@ const loading = ref(false);
 const publishableKey = ref(
   "pk_test_51R2Nh0Bz8bLJBV2o8mzAgS2z1jPVz0RVXTsJLF2lcH6TNpbfiOWNDhqF5it1GN2KkT8n7NUqltpJU7uAx5yIPuyl00umDgnPUu"
 );
+
+const successURL = ref("http://localhost:8080/success");
+const cancelURL = ref("http://localhost:8080/cancel");
+
 
 // Compute Line Items for Stripe
 const lineItems = computed(() =>
@@ -264,7 +268,7 @@ const placeorder = async () => {
 };
 
 onMounted(() => {
-  console.log("🏁 MOUNTED: Menu.vue");
+  console.log("MOUNTED: Menu.vue");
   console.trace();
   fetchVendor();
   fetchMenuItems();
