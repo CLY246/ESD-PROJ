@@ -74,6 +74,7 @@ def get_menu_item(item_id):
 def handle_place_order():
     data = request.get_json()
     order = data.get("order")
+    cart_id = data.get("cart_id")
     is_group = data.get("isGroupOrder", False)
 
     if not order:
@@ -92,6 +93,7 @@ def handle_place_order():
         # Store for later finalization
         if is_group:
             pending_group_orders[order_id] = {
+                "cartid": cart_id,
                 "order": order,
                 "transaction_id": transaction_id
             }
@@ -242,6 +244,7 @@ def finalize_group_order(order_id):
         return jsonify({"message": "Group order not found or already finalized"}), 404
 
     order = pending["order"]
+    cartid = pending['cartid']
     transaction_id = pending["transaction_id"]
     vendor_id = order.get("VendorID")
     user_id = order.get("UserID")  # this could be group lead / initiator
@@ -306,7 +309,11 @@ def finalize_group_order(order_id):
         )
 
         update_model_on_order(vendor_info.get("Cuisine", "Unknown"))
-
+        
+        requests.post(f"http://group-order-service:5000/group-order/{cartid}/mark-paid",
+            json={"order_id": order_id}, 
+            headers={"Content-Type": "application/json"}
+        )
 
         del pending_group_orders[order_id]
         return jsonify({"message": "Group order finalized successfully"}), 200

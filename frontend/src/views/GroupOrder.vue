@@ -90,28 +90,44 @@
               Your cart is empty.
             </div>
 
-            <div class="cart-items">
-              <div v-for="(items, username) in groupedCart" :key="username">
-                <h5 class="username">{{ username }}</h5>
-              <div
-                v-for="item in items" :key="item.ItemID"class="cart-mini-card">
-                <img :src="item.ImageURL" alt="item" class="cart-mini-img" />
-                <div class="cart-mini-details">
-                  <p class="cart-mini-title">{{ item.ItemName }}</p>
-                  <div class="cart-mini-meta">
-                    <span class="cart-mini-price"
-                      >${{ item.Price.toFixed(2) }}</span
-                    >
-                    <span class="cart-mini-qty">{{ item.Quantity }}</span>
+            <div v-if="!paymentInProgress">
+              <div class="cart-items">
+                <div v-for="(items, username) in groupedCart" :key="username">
+                  <h5 class="username">{{ username }}</h5>
+                  <div
+                    v-for="item in items"
+                    :key="item.ItemID"
+                    class="cart-mini-card"
+                  >
+                    <img
+                      :src="item.ImageURL"
+                      alt="item"
+                      class="cart-mini-img"
+                    />
+                    <div class="cart-mini-details">
+                      <p class="cart-mini-title">{{ item.ItemName }}</p>
+                      <div class="cart-mini-meta">
+                        <span class="cart-mini-price"
+                          >${{ item.Price.toFixed(2) }}</span
+                        >
+                        <span class="cart-mini-qty">{{ item.Quantity }}x</span>
+                      </div>
+                    </div>
+                    <div v-if="item.User_ID === userId">
+                      <button
+                        @click="removeFromSharedCart(item.ID)"
+                        :disabled="paymentInProgress"
+                        class="cart-mini-remove"
+                      >
+                        ×
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <button @click="removeFromSharedCart(item.ID)" :disabled="paymentInProgress" class="cart-mini-remove">
-                  ×
-                </button>
               </div>
             </div>
+            <div v-else><div class="text-muted">Checkout in progress</div></div>
           </div>
-        </div>
 
           <div class="cart-footer">
             <div class="cart-summary">
@@ -148,10 +164,9 @@
               Only the cart creator can proceed with payment.
             </div>
           </div>
+        </div>
       </div>
     </div>
-
-  </div>
   </div>
 </template>
 
@@ -364,18 +379,30 @@ export default {
         .on(
           "postgres_changes",
           {
-            event: "UPDATE",
+            event: "*",
             schema: "public",
             table: "shared_carts",
             filter: `CartID=eq.${this.cartId}`,
           },
           (payload) => {
+            const newStatus = payload.new.PaymentStatus;
+            const paymentInProgress = payload.new.PaymentInProgress;
+            const OrderId = payload.new.OrderID;
+
             console.log(
-              "Payment status update received:",
-              payload.new.PaymentInProgress
+              "Realtime cart status update received:",
+              newStatus,
+              paymentInProgress
             );
 
-            this.paymentInProgress = payload.new.PaymentInProgress === true;
+            this.paymentInProgress = paymentInProgress === true;
+
+            if (newStatus === "PAID" && OrderId) {
+              this.$router.push({
+                path: "/success",
+                query: { order_id: OrderId },
+              });
+            }
           }
         )
         .subscribe((status) => {
@@ -387,10 +414,10 @@ export default {
     this.cartId = this.$route.params.cartId;
     console.log("cartId:", this.cartId);
     this.userId = localStorage.getItem("user_id");
+    this.vendorId = this.$route.params.id;
     await this.fetchVendorFromCart();
     await this.fetchSharedCart();
     this.subscribeToRealtime();
-    this.vendorId = this.$route.params.id;
   },
   beforeUnmount() {
     if (this.channel) supabase.removeChannel(this.channel);
@@ -406,6 +433,7 @@ html {
 
 /* Layout */
 .container {
+  padding-top: 0;
   width: 90%;
   max-width: 1200px;
   margin: 0 auto;
