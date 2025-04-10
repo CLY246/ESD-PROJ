@@ -35,6 +35,7 @@ YumsInMyTums, a digital food ordering system that lets users pre-order meals fro
 ## Deployment
 
 1. Run both docker-compose.yaml and docker-compose.kong.yaml
+   
    docker-compose -f docker-compose.yaml -f docker-compose.kong.yaml up -d --build
 
 ## Access Swagger Documentations
