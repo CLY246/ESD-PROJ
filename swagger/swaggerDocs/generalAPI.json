@@ -2559,6 +2559,70 @@
             }
           }
         }
+      },
+
+
+      "/username/{user_id}": {
+        "get": {
+          "summary": "Get user's email for order notification",
+          "description": "Returns the username for a given user ID",
+          "operationId": "getUserByUserId",
+          "tags": ["User Service"],
+          "produces": [
+            "application/json"
+          ],
+          "parameters": [
+            {
+              "name": "user_id",
+              "in": "path",
+              "description": "ID of the user to fetch",
+              "required": true,
+              "type": "string"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "successful operation",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "UserID": {
+                    "type": "string",
+                    "example": "b34b0ebf-b72e-430d-ba57-da61fcbd56b6"
+                  },
+                  "Username": {
+                    "type": "string",
+                    "example": "alice_wonder"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "no such user ID",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "User not found"
+                  }
+                }
+              }
+            },
+            "500": {
+              "description": "Internal server error",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "error": {
+                    "type": "string",
+                    "example": "Internal server error"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
 
       
