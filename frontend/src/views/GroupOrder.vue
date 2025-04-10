@@ -335,7 +335,10 @@ export default {
     },
 
     subscribeToRealtime() {
-      console.log("Subscribing to shared_carts updates for cartId:", this.cartId);
+      console.log(
+        "Subscribing to shared_carts updates for cartId:",
+        this.cartId
+      );
       this.channel = supabase
         .channel("shared-cart-updates")
         .on(
@@ -383,7 +386,7 @@ export default {
             event: "*",
             schema: "public",
             table: "shared_carts",
-            filter: `CartID=eq.${this.cartId}`
+            filter: `CartID=eq.${this.cartId}`,
           },
           (payload) => {
             console.log("Realtime event received:", payload);
@@ -400,6 +403,10 @@ export default {
             this.paymentInProgress = paymentInProgress === true;
 
             if (newStatus === "PAID" && OrderId) {
+              sessionStorage.setItem("cart", JSON.stringify(this.sharedCart));
+              sessionStorage.setItem("cuisine", this.vendor.Cuisine);
+              sessionStorage.setItem("vendorname", this.vendor.VendorName);
+              sessionStorage.setItem("vendorid", this.vendor.VendorID);
               sessionStorage.setItem("isGroupOrder", "true");
               this.$router.push({
                 path: "/success",
