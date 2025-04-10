@@ -169,7 +169,6 @@ const publishableKey = ref(
 const successURL = ref("http://localhost:8080/success");
 const cancelURL = ref("http://localhost:8080/cancel");
 
-
 // Compute Line Items for Stripe
 const lineItems = computed(() =>
   cart.value.map((item) => ({
@@ -614,7 +613,7 @@ h5 {
   margin-top: 8px;
 }
 
-.placeorder{
+.placeorder {
   background-color: #097d4c;
   text-align: center;
   color: #fff;
@@ -627,5 +626,10 @@ h5 {
   background: white;
   padding: 10px 0;
   border-top: 1px solid #ddd;
+}
+.group-order-btn {
+  border-radius: 25px;
+  padding: 10px 20px;
+  border: 0;
 }
 </style>
