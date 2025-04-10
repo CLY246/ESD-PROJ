@@ -2156,101 +2156,155 @@
           "summary": "Submit payment for a group order",
           "description": "Processes payment for items in a shared cart and forwards the order to the order processing service.",
           "operationId": "submitGroupPayment",
-          "tags": [
-            "Group Order"
-          ],
-          "requestBody": {
-            "required": true,
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "order": {
-                      "type": "object",
-                      "description": "The complete order information",
-                      "properties": {
-                        "CartID": {
-                          "type": "string",
-                          "description": "The unique identifier of the shared cart",
-                          "example": "fc8dcb88-6a7a-4c31-b67e-67f5b0b7d7f2"
-                        },
-                        "Items": {
-                          "type": "array",
-                          "description": "List of items in the order",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "ItemID": {
-                                "type": "integer",
-                                "description": "The identifier for the food item",
-                                "example": 17
-                              },
-                              "ItemName": {
-                                "type": "string",
-                                "description": "Name of the food item",
-                                "example": "Lotus Biscoff Bun"
-                              },
-                              "Price": {
-                                "type": "number",
-                                "format": "float",
-                                "description": "Price of the food item",
-                                "example": 2.2
-                              },
-                              "Quantity": {
-                                "type": "integer",
-                                "description": "Quantity of the food item ordered",
-                                "example": 1
-                              },
-                              "User_ID": {
-                                "type": "string",
-                                "format": "uuid",
-                                "description": "Unique identifier of the user who added this item",
-                                "example": "cd5e64cc-0982-48f8-ad05-804fb12c9fea"
-                              }
+          "tags": ["Group Order"],
+          "consumes": ["application/json"],
+          "produces": ["application/json"],
+          "parameters": [
+            {
+              "in": "body",
+              "name": "body",
+              "description": "Order information for payment processing",
+              "required": true,
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "order": {
+                    "type": "object",
+                    "description": "The complete order information",
+                    "required": ["CartID", "Items"],
+                    "properties": {
+                      "CartID": {
+                        "type": "string",
+                        "description": "The unique identifier of the shared cart",
+                        "example": "fc8dcb88-6a7a-4c31-b67e-67f5b0b7d7f2"
+                      },
+                      "Items": {
+                        "type": "array",
+                        "description": "List of items in the order",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "ItemID": {
+                              "type": "integer",
+                              "description": "The identifier for the food item",
+                              "example": 17
+                            },
+                            "ItemName": {
+                              "type": "string",
+                              "description": "Name of the food item",
+                              "example": "Lotus Biscoff Bun"
+                            },
+                            "Price": {
+                              "type": "number",
+                              "format": "float",
+                              "description": "Price of the food item",
+                              "example": 2.2
+                            },
+                            "Quantity": {
+                              "type": "integer",
+                              "description": "Quantity of the food item ordered",
+                              "example": 1
+                            },
+                            "User_ID": {
+                              "type": "string",
+                              "format": "uuid",
+                              "description": "Unique identifier of the user who added this item",
+                              "example": "cd5e64cc-0982-48f8-ad05-804fb12c9fea"
                             }
                           }
-                        },
-                        "TotalAmount": {
-                          "type": "number",
-                          "format": "float",
-                          "description": "Total amount of the order",
-                          "example": 12.5
-                        },
-                        "PaymentMethod": {
-                          "type": "string",
-                          "description": "Method of payment",
-                          "example": "credit_card"
                         }
                       },
-                      "required": ["CartID", "Items"]
+                      "TotalAmount": {
+                        "type": "number",
+                        "format": "float",
+                        "description": "Total amount of the order",
+                        "example": 12.5
+                      },
+                      "PaymentMethod": {
+                        "type": "string",
+                        "description": "Method of payment",
+                        "example": "credit_card"
+                      },
+                      "VendorID": {
+                        "type": "integer",
+                        "description": "The ID of the vendor for this order",
+                        "example": 4
+                      },
+                      "UserID": {
+                        "type": "string",
+                        "description": "The ID of the user initiating the payment",
+                        "example": "cd5e64cc-0982-48f8-ad05-804fb12c9fea"
+                      },
+                      "OrderItems": {
+                        "type": "array",
+                        "description": "Detailed list of items with additional information",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "ItemID": {
+                              "type": "integer",
+                              "description": "The identifier for the food item",
+                              "example": 17
+                            },
+                            "VendorID": {
+                              "type": "integer",
+                              "description": "The ID of the vendor providing this item",
+                              "example": 4
+                            },
+                            "Quantity": {
+                              "type": "integer",
+                              "description": "Quantity of the food item ordered",
+                              "example": 1
+                            },
+                            "Price": {
+                              "type": "number",
+                              "format": "float",
+                              "description": "Price of the food item",
+                              "example": 2.2
+                            },
+                            "Username": {
+                              "type": "string",
+                              "description": "Name of the user who added this item",
+                              "example": "krysten"
+                            }
+                          }
+                        }
+                      }
                     }
-                  },
-                  "required": ["order"]
-                }
+                  }
+                },
+                "required": ["order"]
               }
             }
-          },
+          ],
           "responses": {
             "200": {
               "description": "Order successfully placed",
               "schema": {
                 "type": "object",
                 "properties": {
-                  "OrderID": {
-                    "type": "string",
-                    "description": "The unique identifier of the created order",
-                    "example": "ord-12345"
-                  },
-                  "OrderStatus": {
-                    "type": "string",
-                    "description": "Status of the order",
-                    "example": "pending"
-                  },
-                  "EstimatedWaitTime": {
+                  "code": {
                     "type": "integer",
-                    "description": "Estimated wait time in minutes",
-                    "example": 15
+                    "example": 200
+                  },
+                  "message": {
+                    "type": "string",
+                    "example": "Group order payment session created"
+                  },
+                  "paymentUrl": {
+                    "type": "string",
+                    "description": "URL for completing payment",
+                    "example": "https://payment-gateway.com/checkout/abc123"
+                  },
+                  "OrderID": {
+                    "type": "integer",
+                    "description": "The ID of the created order",
+                    "example": 12345
+                  },
+                  "transaction_id": {
+                    "type": "string",
+                    "description": "The ID of the payment transaction",
+                    "example": "txn_7890"
                   }
                 }
               }
@@ -2281,7 +2335,7 @@
             }
           }
         }
-       },
+      },
 
 
        "/finalize_order/{order_id}": {
